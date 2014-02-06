@@ -1,0 +1,3 @@
+= Getting Started
+
+* link:getting_started/install/index.html[Install KOMMA using the update site]

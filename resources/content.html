@@ -1,0 +1,13 @@
+@import net.enilink.komma.docs.util.* 
+@args int level, boolean showBackToOverview, String documentTitle, String documentContent
+@set(path = Path.get(level))
+@set(title = documentTitle)
+@extends(main.html)
+
+@documentContent.raw()
+
+@if(showBackToOverview) {
+	@section("top") {
+		<a href="@(Path.get(level))index.html">&laquo; Back to Overview</a>
+	}
+}

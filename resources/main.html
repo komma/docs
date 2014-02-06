@@ -1,0 +1,67 @@
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>KOMMA Documentation - @get("title")</title>
+
+    <link href="@get("path")assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<style>
+		body {
+			padding-bottom: 50px;
+		}
+		.container{
+			max-width:none!important; 
+			width:970px 
+			}
+			
+		.highlight {
+			width: 100%;
+		}
+		
+		#toc {
+			margin-top: 20px;
+			margin-bottom: 20px;
+		}
+		
+		#toc ul, #toc li {
+			list-style-type: none;
+		}
+		
+		#toctitle {
+			display: none;
+		}
+		
+		img {
+			display: block;
+			margin: auto; 
+			margin-top: 50px;
+			margin-bottom: 50px;
+		}
+		
+	</style>
+
+</head>
+
+<body class="container">
+
+	<div id="navigation">
+		<img src="@get("path")assets/logo.png" class="pull-right" />
+		<div class="page-header" style="padding-top: 25px; margin-right: 150px;">
+		  	<strong>
+			  	@render("top") {
+			  		Documentation
+			  	}
+		  	</strong><br/>
+		</div>
+	</div>
+
+	<div style="margin-top: 30px;">@doLayout()</div>
+
+</body>
+
+</html>
+
