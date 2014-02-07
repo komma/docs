@@ -1,12 +1,12 @@
 = Install KOMMA using an update site
 
 Installing KOMMA is pretty straight forward. At first you have to 
-get a current version of http://www.eclipse.org[eclipse].
+get a current version of http://www.eclipse.org[Eclipse].
 In this tutorial I am using Eclipse Kepler Standard for Linux 
 (64bit). 
 
 Afterwards you can install KOMMA clicking on 
-Help > Install New Software. Use the following update site.
+__Help > Install New Software__. Use the following update site.
 
 [source,text]
 ----
@@ -18,11 +18,11 @@ Check all items within the category RDF as shown in the picture below.
 
 image::updatesite.png[The KOMMA update site]
 
-Afterwards you have to restart your eclipse application. Eventually 
+Afterwards you have to restart your Eclipse application. Eventually 
 you are able to use the KOMMA Editor. 
 
 You can test your installation by switching to the OWL perspective. 
-Just click Window > Open Perspective > Other 
+Just click __Window > Open Perspective > Other__ 
 
 image::perspective.png[Choosing the OWL-Perspective]
 
