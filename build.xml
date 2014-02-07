@@ -11,7 +11,7 @@
 		<delete dir="output" />
 	</target>
 
-	<target name="compile">
+	<target name="compile" depends="clean">
 		<mkdir dir="dist/classes" />
 		<javac includeantruntime="false" srcdir="src" destdir="dist/classes">
 			<classpath refid="my-classpath" />
