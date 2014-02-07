@@ -1,3 +1,7 @@
 = Getting Started
 
 * link:getting_started/install/index.html[Install KOMMA using the update site]
+
+= Contributing
+
+* link:contributing/sources/index.html[Get the sources]
