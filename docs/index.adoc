@@ -2,6 +2,10 @@
 
 * link:getting_started/install/index.html[Install KOMMA using the update site]
 
+= Framework
+
+* link:framework/objectmapping/index.html[Applying object triple mapping]
+
 = Contributing
 
 * link:contributing/sources/index.html[Get the sources]
