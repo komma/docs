@@ -39,6 +39,9 @@ public class Generator {
 
 	private Engine engine = new Engine();
 
+	private String output;
+	private String input;
+
 	private String getBasePath() {
 		try {
 			return getBasePathFile().getCanonicalPath();
@@ -48,7 +51,12 @@ public class Generator {
 	}
 
 	private File getBasePathFile() {
-		return new File("./docs/");
+		return new File(input);
+	}
+
+	public Generator(String inputDir, String outputDir) {
+		this.input = inputDir;
+		this.output = outputDir;
 	}
 
 	public void generate() {
@@ -128,7 +136,7 @@ public class Generator {
 	}
 
 	private String getRelatedOutputFilePath(File file, String suffix) {
-		return "./output" + getRelatedFilePath(file, suffix);
+		return output + "/" + getRelatedFilePath(file, suffix);
 	}
 
 	private String getRelatedFilePath(File file, String suffix) {

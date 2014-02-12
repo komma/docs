@@ -2,7 +2,7 @@
 <project name="net.enilink.komma.docs" default="generate" basedir=".">
 
 	<path id="my-classpath">
-		<fileset dir="./lib/">
+		<fileset dir="lib/">
 			<include name="*.jar" />
 		</fileset>
 	</path>
@@ -33,9 +33,11 @@
 		<java classname="net.enilink.komma.docs.Main">
 			<classpath refid="my-classpath" />
 			<classpath>
-				<pathelement location="./dist/jar/docs.jar" />
+				<pathelement location="dist/jar/docs.jar" />
 			</classpath>
+			<arg value="docs" />
+			<arg value="output" />
 		</java>
-		<copydir src="resources/assets" dest="./output/assets" />
+		<copydir src="resources/assets" dest="output/assets" />
 	</target>
 </project>
