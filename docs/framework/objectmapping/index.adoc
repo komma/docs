@@ -34,12 +34,12 @@ public class Library {
 }
 ----
 
-The _Library_ class basically contains some static fields for easier working with URLs. 
+The _Library_ class basically contains some static fields for easier working with URIs. 
 
 === Person
 
 We furthermore define the _Person_ entity as a java interface with properties such 
-as _dateOfBirth_ or _name_. The properties are mapped by the provided _@IRI_ annotation 
+as _dateOfBirth_ or _name_. The properties are mapped by the provided _@Iri_ annotation 
 used for the getters of each property. 
 
 [source,java]
@@ -144,7 +144,7 @@ public class Main {
 		// create a book
 		Book book = manager.createNamed(Library.URI.appendFragment("book1"),
 				Book.class);
-		book.setTitle("BookY");
+		book.setTitle("Point of No Return");
 		// add some authors
 		book.getAuthors().add(
 				createPerson(manager, "person1", "Clint Eastwood", new Date()));
@@ -227,8 +227,8 @@ The execution of this given function will print something like the following:
 
 [source,text]
 ----
-LinkedHashBindings: {titleValue=Book1 Title, authorName=Clint Eastwood, authorDateOfBirth=2014-02-10T13:38:23.304+01:00}
-LinkedHashBindings: {titleValue=Book1 Title, authorName=Marty McFly, authorDateOfBirth=2014-02-10T13:38:23.349+01:00}
+LinkedHashBindings: {titleValue=Point of No Return, authorName=Clint Eastwood, authorDateOfBirth=2014-02-10T13:38:23.304+01:00}
+LinkedHashBindings: {titleValue=Point of No Return, authorName=Marty McFly, authorDateOfBirth=2014-02-10T13:38:23.349+01:00}
 ----
 
 === Executing a 'mapped' query
