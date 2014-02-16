@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Node {
 
-	public List<Node> children = new ArrayList<Node>();
+	public List<Node> children = new ArrayList<>();
 
-	public List<Entry> entries = new ArrayList<Entry>();
+	public List<Entry> entries = new ArrayList<>();
 
 	public String title;
 
@@ -15,13 +15,13 @@ public class Node {
 		this.title = title;
 	}
 
+	public void add(Node node) {
+		children.add(node);
+	}
+
 	@Override
 	public String toString() {
 		return title;
-	}
-
-	public void add(Node node) {
-		children.add(node);
 	}
 
 }

@@ -1,14 +1,15 @@
+delimiters "$", "$"
+main(opts) ::= <<
 <!DOCTYPE html>
 <html>
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <title>KOMMA Documentation - @get("title")</title>
+    <title>KOMMA Documentation - $opts.title$</title>
 
-    <link href="@get("path")assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="$opts.rootPath$assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
 	<style>
 		body {
@@ -46,19 +47,19 @@
 <body class="container">
 
 	<div id="navigation">
-		<img src="@get("path")assets/logo.png" class="pull-right" />
+		<img src="$opts.rootPath$assets/logo.png" class="pull-right" />
 		<div class="page-header" style="padding-top: 25px; margin-right: 150px;">
 		  	<strong>
-			  	@render("top") {
-			  		Documentation
-			  	}
+			  	$navbar(opts)$
 		  	</strong><br/>
 		</div>
 	</div>
 
-	<div style="margin-top: 30px;">@doLayout()</div>
+	<div style="margin-top: 30px;">$opts.contents$</div>
 
 </body>
 
 </html>
+>>
 
+navbar(opts) ::= "Documentation"

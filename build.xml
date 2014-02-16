@@ -38,6 +38,8 @@
 			<arg value="docs" />
 			<arg value="output" />
 		</java>
-		<copydir src="resources/assets" dest="output/assets" />
+		<copy todir="output/assets">
+			<fileset dir="resources/assets" />
+		</copy>
 	</target>
 </project>

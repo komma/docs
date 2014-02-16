@@ -1,18 +1,21 @@
 package net.enilink.komma.docs;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import net.enilink.komma.docs.model.Entry;
 import net.enilink.komma.docs.model.Node;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.asciidoctor.DocumentHeader;
-import org.asciidoctor.internal.IOUtils;
-import org.rythmengine.Rythm;
+import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.STGroup;
+import org.stringtemplate.v4.STGroupFile;
 
 public class Generator {
 
@@ -37,26 +40,43 @@ public class Generator {
 		}
 	};
 
-	private Engine engine = new Engine();
+	class Options extends Entry {
+		public String contents;
 
-	private String output;
-	private String input;
+		public Options(String title, String path, String contents) {
+			super(title, path);
+			this.contents = contents;
+		}
 
-	private String getBasePath() {
-		try {
-			return getBasePathFile().getCanonicalPath();
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
+		public String getRootPath() {
+			StringBuilder sb = new StringBuilder();
+			Path parentPath = Paths.get(path).getParent();
+			if (!parentPath.equals(outputPath)) {
+				Path relative = outputPath.relativize(parentPath);
+				for (int i = 0; i < relative.getNameCount(); i++) {
+					sb.append("../");
+				}
+			}
+			return sb.toString();
+		}
+
+		public String getIndexPath() {
+			if (!"index.html".equals(outputPath.relativize(Paths.get(path))
+					.toString())) {
+				return getRootPath() + "index.html";
+			}
+			return null;
 		}
 	}
 
-	private File getBasePathFile() {
-		return new File(input);
-	}
+	private Engine engine = new Engine();
+
+	private final Path outputPath;
+	private final Path inputPath;
 
 	public Generator(String inputDir, String outputDir) {
-		this.input = inputDir;
-		this.output = outputDir;
+		this.inputPath = Paths.get(inputDir);
+		this.outputPath = Paths.get(outputDir);
 	}
 
 	public void generate() {
@@ -67,92 +87,54 @@ public class Generator {
 		/*
 		 * Handle this manually
 		 */
-
-		// try {
-		// IOUtils.writeFull(new FileWriter("./output/index.html"),
-		// Rythm.render(new File("./resources/toc.html"), root));
-		// } catch (IOException e) {
-		// throw new RuntimeException(e);
-		// }
 	}
 
 	private Node createContentDocuments() {
 		Node root = new Node("Root");
-		createContentDocuments(root, getBasePathFile(), 0);
+		try {
+			createContentDocuments(root, inputPath.toFile());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 		return root;
 	}
 
-	private void createContentDocuments(Node head, File file, int level) {
-		Node node = new Node(file.getName());
+	private void createContentDocuments(Node head, File dir) throws IOException {
+		Node node = new Node(dir.getName());
 		head.children.add(node);
-		for (File directory : file.listFiles(DIRECTORIES)) {
-			createContentDocuments(node, directory, level + 1);
+		for (File directory : dir.listFiles(DIRECTORIES)) {
+			createContentDocuments(node, directory);
 		}
-
-		for (File input : file.listFiles(ADOC_FILES)) {
+		STGroup contentSTGroup = new STGroupFile("./resources/content.stg");
+		for (File input : dir.listFiles(ADOC_FILES)) {
 			DocumentHeader header = engine.getHeader(input);
-			String documentContent = engine.render(input);
-			try {
-				IOUtils.writeFull(
-						new FileWriter(getRelatedOutputFile(input, ".html")),
-						Rythm.render(new File("./resources/content.html"),
-								level, !input.getName().equals("index.adoc")
-										|| level > 0,
-								header.getDocumentTitle(), documentContent));
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			String contents = engine.render(input);
+
+			Path outPath = getOutputFilePath(input.toPath(), "html");
 			Entry entry = new Entry(header.getDocumentTitle(),
-					getRelatedFilePath(input, ".html"));
+					outPath.toString());
+			Files.createDirectories(outPath.getParent());
+
+			ST st = contentSTGroup.getInstanceOf("main");
+			st.add("opts", new Options(entry.title, entry.path, contents));
+			try (BufferedWriter writer = Files.newBufferedWriter(outPath,
+					Charset.forName("UTF-8"))) {
+				writer.write(st.render());
+			}
 			node.entries.add(entry);
 		}
 
-		for (File input : file.listFiles(REST)) {
-			try {
-				FileUtils.copyFile(
-						input,
-						getRelatedOutputFile(
-								input,
-								"."
-										+ FilenameUtils.getExtension(input
-												.getName())));
-			} catch (Exception ex) {
-				throw new RuntimeException(ex);
-			}
+		for (File input : dir.listFiles(REST)) {
+			Files.copy(input.toPath(),
+					outputPath.resolve(inputPath.relativize(input.toPath())));
 		}
 	}
 
-	private File getRelatedOutputFile(File file, String suffix) {
-		File output = new File(getRelatedOutputFilePath(file, suffix));
-		if (!output.exists()) {
-			output.getParentFile().mkdirs();
-			try {
-				output.createNewFile();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return output;
-	}
-
-	private String getRelatedOutputFilePath(File file, String suffix) {
-		return output + "/" + getRelatedFilePath(file, suffix);
-	}
-
-	private String getRelatedFilePath(File file, String suffix) {
-		String path = getRelativeDirectoryPath(file);
-		String string = path + "/"
-				+ file.getName().substring(0, file.getName().lastIndexOf("."))
-				+ suffix;
-		return string;
-	}
-
-	private String getRelativeDirectoryPath(File file) {
-		try {
-			return file.getParentFile().getCanonicalPath()
-					.substring(getBasePath().length());
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+	private Path getOutputFilePath(Path srcFile, String suffix) {
+		String out = outputPath.resolve(inputPath.relativize(srcFile))
+				.toString();
+		out = out.replaceAll("\\..*$", "." + suffix);
+		Path outPath = Paths.get(out);
+		return outPath;
 	}
 }
