@@ -74,6 +74,10 @@ public class Generator {
 	private final Path outputPath;
 	private final Path inputPath;
 
+	public static void main(String[] args) {
+		new Generator(args[0], args[1]).generate();
+	}
+
 	public Generator(String inputDir, String outputDir) {
 		this.inputPath = Paths.get(inputDir);
 		this.outputPath = Paths.get(outputDir);

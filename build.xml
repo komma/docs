@@ -30,7 +30,7 @@
 	<target name="generate" depends="jar">
 		<!-- I did not implement an ant task, because of the fact that classloader 
 			problems occurred when running a respective proof-of-concept ant task -->
-		<java classname="net.enilink.komma.docs.Main">
+		<java classname="net.enilink.komma.docs.Generator">
 			<classpath refid="my-classpath" />
 			<classpath>
 				<pathelement location="dist/jar/docs.jar" />
