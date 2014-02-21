@@ -4,7 +4,11 @@
 
 = Framework
 
-* link:framework/objectmapping/index.html[Applying object triple mapping]
+* link:framework/objectmapping/index.html[Basic object triple mapping]
+
+= Editors
+
+* link:editors/owl_editor/index.html[The OWL editor]
 
 = Contributing
 

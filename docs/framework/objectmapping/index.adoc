@@ -1,12 +1,12 @@
-= Applying object triple mapping
+= Basic object triple mapping
 
 toc::[]
 
 == Introduction
 
-KOMMA allows for the mapping of RDF classes to java interfaces. We outline this mapping in 
-this tutorial. The full source code of this tutorial is available in the KOMMA examples 
-repository on github. 
+KOMMA allows the mapping of RDF classes to Java interfaces. We outline this mapping in 
+this tutorial. The full source code of this tutorial is available in the https://github.com/komma/komma-examples[KOMMA examples 
+repository on Github]. 
 
 This tutorial assumes that you have installed KOMMA using an update site or downloaded 
 the sources or somehow got respective binaries added to your classpath. 
@@ -14,7 +14,7 @@ the sources or somehow got respective binaries added to your classpath.
 == Prepare the model
 
 We take the use case of a library. A library consists of books that are 
-written persons. We hence define the following classes and interfaces. 
+written by persons. Hence, we define the following classes and interfaces. 
 
 === Library
 
@@ -38,9 +38,9 @@ The _Library_ class basically contains some static fields for easier working wit
 
 === Person
 
-We furthermore define the _Person_ entity as a java interface with properties such 
-as _dateOfBirth_ or _name_. The properties are mapped by the provided _@Iri_ annotation 
-used for the getters of each property. 
+We furthermore define the _Person_ entity as a Java interface with properties such 
+as _dateOfBirth_ or _name_. The properties are mapped with the provided _@Iri_ annotation 
+on the getter method for each  property. 
 
 [source,java]
 ----
@@ -75,7 +75,7 @@ Please note that KOMMA can work with _XMLGregorianCalendar_ for date bindings.
 
 === Book
 
-Last but not least we define the _Book_ entity.
+Last but not least we define the entity _Book_.
 
 [source,java]
 ----
@@ -107,19 +107,19 @@ statements in the form of _:book :author ?person_
 
 == Generating and querying some data
 
-Now that we have created a model. We can use it to generate some data. 
+Now we can use the implemented model to generate some data. 
 
 === Main.java - Big Picture 
 
-Amongst others data access in KOMMA can be managed by implementations of _IEntityManager_. 
+Amongst others, access to data can be managed with KOMMA by implementations of _IEntityManager_. 
 In this tutorial we create an EntityManager on top of Sesame's MemoryStore.
 
 We have to tell this manager to use the Book and Person interfaces to encapsulate 
 access to instances and properties of Books or Persons. We have to register them 
 as Concepts. 
 
-Eventually we create one book and add Clint Eastwood and Marty McFly as authors 
-to this book and do some queries against the database. 
+For example, we create one book and add Clint Eastwood and Marty McFly as authors 
+to this book and execute some queries against the database. 
 
 [source,java]
 ----
@@ -233,7 +233,7 @@ LinkedHashBindings: {titleValue=Point of No Return, authorName=Marty McFly, auth
 
 === Executing a 'mapped' query
 
-Querying data we can also use our models for encapsulating data access to properties. In this function we simply select 
+Besides querying data with SPARQL, we can also use our model interfaces for encapsulating data access to properties. In this function we simply select 
 all instances of _Person_ and print the properties defined by the respective interface. 
 
 [source,java]
@@ -266,12 +266,12 @@ Name: Marty McFly
 Place of birth:null
 ----
 
-Please note as we do not have any triples doing a statement of the place of birth for any person the 
+Please note as we do not have any triples stating the place of birth for any person the 
 getter for the _placeOfBirth-property_ returns _null_.
 
 === Removing an object
 
-In this section we delete the book and show that it really is gone. 
+In this section we delete the book and show that it is really gone. 
 
 [source,java]
 ----
