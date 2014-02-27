@@ -1,0 +1,571 @@
+= Adding behaviour classes to implement application logic
+
+toc::[]
+
+== Prerequisites
+
+This example makes use of KOMMA's object mapping feature as described in
+link:../objectmapping/index.html[Basic object triple mapping]
+and it assumes you are familiar with that feature.
+
+== Introduction
+
+KOMMA allows for binding classes with application logic, which we call
+_Behaviours_, to mapped _Entities_.
+In this tutorial, we want to show you how to use this feature.
+
+The example we are going to use is a (very simple) process engine. This is
+somewhat complex but don't be alarmed, it is stripped down to a bare minimum
+to highlight the general idea while still being a functional example.
+
+The full source code of this tutorial is available in the
+link:https://github.com/komma/komma-examples[KOMMA examples repository on github].
+
+== The process engine
+
+To keep matters as simple as possible, we are going to have only four basic
+elements: _Processes_ consist of a number of _Activities_ (some of which
+are going to be _Tasks_ requiring manual completion) that are connected by
+outgoing _Transitions_.
+
+Additionally, we need to distinguish between static and dynamic aspects for
+defining and executing our processes. The mappings are therefore separated into
+_DefinitionAspects_ and _RuntimeAspects_ that are themselves mapped entities
+from which the other model elements are derived (yes, you can use inheritance
+for mapped entities).
+
+We arrive at the following application model:
+
+* DefinitionAspect
+** ProcessDefinition
+** ActivityDefinition
+*** TaskDefinition
+** Transition (there is no dynamic aspect to transitions)
+* RuntimeAspect
+** ProcessInstance
+** ActivityInstance
+*** TaskInstance
+
+Let us just pick _ProcessDefinition_ and have a look at it:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.model;
+
+import java.util.Set;
+
+import net.enilink.composition.annotations.Iri;
+
+@Iri("http://enilink.net/komma/example/behaviour#ProcessDefinition")
+public interface ProcessDefinition extends DefinitionAspect {
+
+	@Iri("http://enilink.net/komma/example/behaviour#hasName")
+	String getName();
+
+	void setName(String name);
+
+	@Iri("http://enilink.net/komma/example/behaviour#hasActivity")
+	Set<ActivityDefinition> getHasActivity();
+
+	void setHasActivity(Set<? extends ActivityDefinition> hasActivity);
+
+}
+----
+
+This one maps two properties, one being the name for the process, the other
+representing the activities it consists of.
+
+For brevity, the rest of these mappings are omitted here, suffice to say they
+are equally trivial. Please refer to the examples repository on github for the
+details.
+
+== A simple process API
+
+Before defining the API for our runtime, there is one caveat to discuss:
+a _Behaviour_ needs to be bound to an already mapped _Entity_, so logic that
+applies to definition aspects needs to be separated from logic that applies to
+runtime instances.
+
+To use _Process_ as an example, the behaviour we are going to bind to
+_ProcessDefinition_ allows the creation of a matching _ProcessInstance_.
+We then bind another behaviour to _ProcessInstance_ which provides the methods
+that operate on the runtime instance.
+
+With that out of the way, this is what our very basic API for process execution
+looks like (package and import statements omitted for brevity):
+
+[source,java]
+----
+public interface IProcessDefinition {
+	public ProcessInstance createProcessInstance();
+}
+
+public interface IProcessInstance {
+	public ProcessInstance start();
+	public boolean end();
+}
+
+public interface IActivityDefinition {
+	public ActivityInstance createActivityInstance(
+			ProcessInstance processInstance);
+}
+
+public interface IActivityInstance {
+	public boolean enter();
+	public boolean execute();
+	public boolean leave(String transitionName);
+}
+
+public interface ITaskInstance extends IActivityInstance {
+	public boolean complete(String transitionName);
+}
+
+public interface ITransition {
+	public boolean activate(ProcessInstance processInstance);
+}
+----
+
+NOTE: The fact that _ITaskInstance_ extends _IActivityInstance_ is relevant for
+the discussion below.
+
+This concludes the definition of our mapped entities and the API we want to use
+for our business logic (the process runtime).
+
+== Implementation
+
+Let us now take a look at the _Behaviour_ class implementing our business
+method for _IProcessDefinition_ to get an idea about how these behaviour
+implementations look like:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.runtime;
+
+import java.util.UUID;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.core.URI;
+import net.enilink.komma.example.behaviour.IProcessDefinition;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ProcessDefinition;
+import net.enilink.komma.example.behaviour.model.ProcessInstance;
+
+public abstract class ProcessDefinitionSupport implements ProcessDefinition,
+		Behaviour<ProcessDefinition>, IProcessDefinition {
+
+	@Override
+	public ProcessInstance createProcessInstance() {
+		URI piUri = getURI().appendFragment(
+				"ProcessInstance_" + getURI().fragment() + "_"
+						+ UUID.randomUUID());
+
+		ProcessInstance pi = getEntityManager().createNamed(piUri,
+				ProcessInstance.class);
+
+		pi.setUsesDefinition(getBehaviourDelegate());
+
+		pi = ((IProcessInstance) pi).start();
+
+		return pi;
+	}
+}
+----
+
+As you can see, the actual code for _createProcessInstance()_ is pretty
+straightforward. It really just creates a new named _ProcessInstance_, sets the
+mapped entity on which it was called as the associated _ProcessDefinition_,
+then returns the new _ProcessInstance_ after calling _start()_ on it (using
+another of the API methods we defined).
+
+With respect to the boilerplate code, we only define an abstract class (the
+convention KOMMA uses is an appended _Support_ suffix) that implements our
+mapped entity, a _Behaviour<>_ for the mapped entity and (optional) other
+interfaces (in our case, the API we defined above).
+
+Now, there must surely be some magic hidden somewhere in the implementation of
+_IProcessInstance::start()_? See for yourself:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityDefinition;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ActivityDefinition;
+import net.enilink.komma.example.behaviour.model.ProcessInstance;
+
+public abstract class ProcessInstanceSupport implements ProcessInstance,
+		Behaviour<ProcessInstance>, IProcessInstance {
+
+	@Override
+	public ProcessInstance start() {
+		setState(STATE_ACTIVE);
+
+		// find and activate the start activity
+		// for simplicity, just use name=="start" as indicator
+		for (ActivityDefinition activityDef : getUsesDefinition()
+				.getHasActivity()) {
+			if ("start".equals(activityDef.getName())) {
+				((IActivityDefinition) activityDef)
+						.createActivityInstance(getBehaviourDelegate());
+			}
+		}
+
+		return getBehaviourDelegate();
+	}
+
+	@Override
+	public boolean end() {
+		setState(STATE_ENDED);
+
+		return true;
+	}
+}
+----
+
+Huh, this doesn't look very different, after all! What's the deal here, is
+there more to it?
+
+_Why, yes, there is!_
+
+There's a common mechanism that handles the mapped _Entities_, their accessor
+methods to the underlying RDF store and the _Behaviours_ that are bound to
+them. We call this link:../composition[Object Composition] and it is actually
+a very essential part to all of KOMMA.
+
+Now, for our example, you don't need to understand the details of how the
+composition mechanism does all the work for you, the general outline will do
+fine. What it boils down to here is that multiple _Behaviours_ can be available
+for a given _Entity_ and interface. If we take a close look at _TaskInstance_,
+we find that there are actually three _Behaviour_ classes at work (*):
+
+* ActivityInstanceSupport (the base behaviour for _all_ activities)
+* TaskInstanceSupport (specific behaviour for _Tasks_)
+* EndInstanceSupport (specific behaviour for _End_ activities **)
+
+Let us look at the first one from that list:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.ITransition;
+import net.enilink.komma.example.behaviour.model.ActivityInstance;
+import net.enilink.komma.example.behaviour.model.Transition;
+
+public abstract class ActivityInstanceSupport implements ActivityInstance,
+		Behaviour<ActivityInstance>, IActivityInstance {
+
+	@Override
+	public boolean enter() {
+		setState(STATE_OPEN);
+		getProcessInstance().setCurrentActivity(getBehaviourDelegate());
+
+		// can be implemented by more specialized support classes
+		// be sure to call them and don't just use this.execute()
+		((IActivityInstance) getBehaviourDelegate()).execute();
+
+		return true;
+	}
+
+	@Override
+	public boolean execute() {
+		if (!STATE_OPEN.equals(getState())) {
+			throw new IllegalStateException("Activity " + getURI()
+					+ " is not open.");
+		}
+
+		// can be implemented by more specialized support classes
+		// be sure to call them and don't just use this.leave()
+		((IActivityInstance) getBehaviourDelegate()).leave(null);
+
+		return true;
+	}
+
+	@Override
+	public boolean leave(String transitionName) {
+
+		// [... get the transition matching the given name ...]
+
+		setState(STATE_COMPLETED);
+		setTransitionName(transitions[t].getName());
+
+		((ITransition) transitions[t]).activate(getProcessInstance());
+
+		return true;
+	}
+}
+----
+
+Now, as stated above, this is the base behaviour available for _all_
+_ActivityInstances_, including those for _Tasks_. These also have their own
+specific behaviour, which we'll get to in a minute.
+
+An _important_ detail here is the way this base behaviour invokes the other
+methods. Note that it does _not_ call its own implementations directly but also
+uses the composition mechanism to invoke the correct one.
+
+NOTE: This is due to the behaviours not actually inheriting from each other,
+making virtual methods/dynamic dispatch unavailable for them. We can still
+achieve the desired result, however, when we use the composition mechanism as
+shown in the example.
+
+== Precedence
+
+If you take a look at the second of the behaviours relevant to _TaskInstances_
+from the list above, you'll notice something we haven't shown you yet:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.annotations.Precedes;
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.ITaskInstance;
+import net.enilink.komma.example.behaviour.model.TaskInstance;
+
+@Precedes(ActivityInstanceSupport.class)
+public abstract class TaskInstanceSupport implements TaskInstance,
+		Behaviour<TaskInstance>, ITaskInstance {
+
+	@Override
+	public boolean execute() {
+		// this is a wait-state, not a normal activity
+		setState(STATE_AWAITING_COMPLETION);
+
+		// returning true here signals the end of the method chaining; in other
+		// words, ActivityInstanceSupport.execute() will NOT be called
+		return true;
+	}
+
+	@Override
+	public boolean complete(String transitionName) {
+		if (!STATE_AWAITING_COMPLETION.equals(getState())) {
+			throw new IllegalStateException("Task " + getURI()
+					+ " is not awaiting completion.");
+		}
+
+		((IActivityInstance) getBehaviourDelegate()).leave(transitionName);
+
+		return true;
+	}
+}
+----
+
+This behaviour uses the _@Precedes_ annotation to impose an order on the
+otherwise unordered set of behaviours available for an entity. As detailed in
+the link:../copmosition[composition documentation],
+this will affect the method chaining mechanism by enforcing an invocation
+order. For our specific case, this means that a call to a method of
+_IActivityInstance_ will execute the appropriate method of
+_TaskInstanceSupport_ before that of _ActivityInstanceSupport_ (this is due to
+_ITaskInstance_ extending _IActivityInstance_, as noted above).
+
+An important aspect of the method chaining is the influence of the return
+value. Returning something non-null (or a boolean true) results in the chain
+being stopped, whereas returning null (or false) causes the chain to continue
+with the method on the next behaviour.
+
+NOTE: Imagine the return value as a kind of flag indicating something like
+"We're done here, I managed to come up with the answer".
+
+With that being said, let's look at the third behaviour relevant to
+_ActivityInstances_ (and therefore, as mentioned, to _TaskInstances_ as well)
+from the list above. This is more interesting, because it relies on _@Precedes_
+as well as on the subtleties of return value and invocation chain:
+
+[source,java]
+----
+package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.annotations.Precedes;
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ActivityInstance;
+
+@Precedes(ActivityInstanceSupport.class)
+public abstract class EndInstanceSupport implements ActivityInstance,
+		Behaviour<ActivityInstance>, IActivityInstance {
+
+	@Override
+	public boolean execute() {
+		// simplicity: name=="end" designates the end activity
+		if (!"end".equals(getUsesDefinition().getName())) {
+			// returning false causes the invocation of this method on the next
+			// behaviour in the chain (here: ActivityInstanceSupport.execute())
+			return false;
+		}
+
+		setState(STATE_COMPLETED);
+
+		// end activities just terminate the enclosing process instance
+		// they cannot be left as there are no outgoing transitions
+		((IProcessInstance) getProcessInstance()).end();
+
+		return true;
+	}
+}
+----
+
+Prior to explaining this in detail, let us review our example.
+
+In an effort to keep the process model simple, _End_ and _Start_ are just plain
+activities, only distinguished by their names ("start" or "end", respectively).
+For the implementation, this means that any special behaviour needs to be bound
+to the base entity _ActivityInstance_ and as such results in it being applied
+to _all_ such instances, including those for _Tasks_.
+
+NOTE: \*,** Hopefully, this also clears up any questions about why this special
+behaviour for _End_ should be relevant to _Tasks_ at all.
+
+There's nothing special to _Start_ though, it has outgoing transitions like
+other activities and it really just happens to be the initial activity in a
+process (see _ProcessInstanceSupport::start()_), so it uses the default
+behaviour. An _End_ activity, however, is the final activity in a process,
+which it should _end()_, and it also lacks outgoing transitions, which are the
+reasons for binding this third behaviour class to _IActivityInstance_.
+
+As for the _execute()_ method, consider what you learned about _@Precedes_ and
+the method chaining. _EndInstanceSupport_ precedes _ActivityInstanceSupport_
+(no particular order with respect to _TaskInstanceSupport_ given) and is going
+to be called for _all_ activities. It is, therefore, imperative that the
+execute method does its special handling only when it actually deals with an
+_End_ activity, and falls back to the chain in all other cases (remember that
+returning something null or a boolean false means that the chain continues with
+- or falls back to - the next implementation up the chain).
+
+== Behaviour registration
+
+We have now taken a look at what needs to be done to implement our process
+runtime using _Behaviours_ and discussed a few details of doing so, but we
+still haven't seen how the binding of these behaviours to the mapped entities
+from our model works.
+
+As mentioned in the prerequisites, this example assumes you have taken a look
+at the object mapping example, so this should look familiar.
+
+NOTE: The example is also using code to set up the KOMMA framework from the
+object mapping example, so be sure to import both projects into your workspace.
+
+[source,java]
+----
+public static void main(String[] args) throws RepositoryException {
+
+	// create a sesame repository
+	SailRepository dataRepository = new SailRepository(new MemoryStore());
+	dataRepository.initialize();
+
+	// create an entity manager and register concepts
+	IEntityManager manager = createEntityManager(new ExampleModule(
+			dataRepository, new KommaModule() {
+				{
+					// model classes, definition
+					addConcept(DefinitionAspect.class);
+					addConcept(ProcessDefinition.class);
+					addConcept(ActivityDefinition.class);
+					addConcept(TaskDefinition.class);
+					addConcept(Transition.class);
+					// model classes, runtime
+					addConcept(RuntimeAspect.class);
+					addConcept(ProcessInstance.class);
+					addConcept(ActivityInstance.class);
+					addConcept(TaskInstance.class);
+
+					// behaviour classes
+					addBehaviour(ProcessDefinitionSupport.class);
+					addBehaviour(ProcessInstanceSupport.class);
+					addBehaviour(ActivityDefinitionSupport.class);
+					addBehaviour(ActivityInstanceSupport.class);
+					addBehaviour(TaskDefinitionSupport.class);
+					addBehaviour(TaskInstanceSupport.class);
+					addBehaviour(EndInstanceSupport.class);
+					addBehaviour(TransitionSupport.class);
+				}
+			}));
+
+	demonstrateProcess(manager);
+}
+----
+
+If you compare this to the object mapping example, apart from obviously adding
+the entity classes necessary for our process model, we simply add our behaviour
+implementations, using the appropriately named _addBehaviour()_ method - _and
+that's it!_
+
+This is really all that needs to be done for registering them. At runtime, the
+composition framework uses the _@Iri_ annotations to do the mapping and bind
+the behaviours to the entities as needed.
+
+== Usage
+
+Let us demonstrate our simple process runtime by defining and executing a
+short demo process. Again, the idea being to keep this simple, this will do:
+
+Process 'DMC-12 Testrun': Start -> Task1 'Invent Flux Capacitor' (Doc)
+-> Task2 'Experience Time Travel' (Einstein) -> End
+
+Fast forward beyond the initialization step where we define this process with
+its activities and their transitions to the part where we execute it:
+
+[source,java]
+----
+private static void demonstrateProcess(IEntityManager manager) {
+	// [... initialize the example process ...]
+
+	// create and start a new instance of the process
+	ProcessInstance processInstance = ((IProcessDefinition) processDef)
+			.createProcessInstance();
+
+	// [... create some output ...]
+
+	ActivityInstance ai1 = processInstance.getCurrentActivity();
+
+	// [... check state, create some output ...]
+
+	((ITaskInstance) ai1).complete(null);
+
+	// [... refresh, create some output ...]
+
+	ActivityInstance ai2 = processInstance.getCurrentActivity();
+
+	// [... check state, create some output ...]
+
+	((ITaskInstance) ai2).complete(null);
+
+	// [... refresh, create more output ...]
+}
+----
+
+Though a few things have been omitted in this snippet, the most relevant parts
+where we actually use our API from within the simple test program show that
+working with the behaviour classes is pretty straightforward.
+
+If you run the program from the example using our short demo process, the
+output looks somewhat like this:
+
+[source,text]
+----
+process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=active activity='Invent Flux Capacitor'
+complete()ing current task: name='Invent Flux Capacitor', for='Emmett Lathrop 'Doc' Brown', state=awaiting_completion...
+process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=active activity='Experience Time Travel'
+complete()ing current task: name='Experience Time Travel', for='Einstein', state=awaiting_completion...
+process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=ended activity='end'
+**** Success! Process 'DMC-12 Testrun' has completed! ****
+the following activities have been created:
+urn:enilink.net:komma:behaviour-example#TaskInstance_ActivityTask1_031ace64-9543-49bb-b73b-dc96d2823280 name='Invent Flux Capacitor' state=completed transition=toTask2
+urn:enilink.net:komma:behaviour-example#TaskInstance_ActivityTask2_730e8b4b-fcac-449b-85fd-16ea6b649451 name='Experience Time Travel' state=completed transition=toEnd
+urn:enilink.net:komma:behaviour-example#ActivityInstance_ActivityStart_24ce367a-21e1-43f5-b4c6-4cd0e86d26c3 name='start' state=completed transition=toTask1
+urn:enilink.net:komma:behaviour-example#ActivityInstance_ActivityEnd_1d45a4cb-bd83-4b2b-ad5e-3eaa10ede423 name='end' state=completed transition=null
+----
+
+== TL;DR
+
+Using KOMMA behaviours to bind business logic to mapped entities is a very
+easy way to implement an application on top of RDF data.
+
+You could start working with it right now!
