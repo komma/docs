@@ -100,7 +100,7 @@ import net.enilink.composition.annotations.Iri;
 @Iri(Library.URI_STRING + "Document")
 public interface Document {
 
-	@Iri(Library.URI_STRING + "dateOfBirth")
+	@Iri(Library.URI_STRING + "dateOfRelease")
 	XMLGregorianCalendar getDateOfRelease();
 
 	void setDateOfRelease(XMLGregorianCalendar dateOfRelease);
