@@ -11,6 +11,7 @@ main(opts) ::= <<
 
     <link href="$opts.rootPath$assets/bootstrap/css/bootstrap_yeti-asciidoc.min.css" rel="stylesheet">
     <link href="$opts.rootPath$assets/bootstrap/css/custom.css" rel="stylesheet">
+    <link href="$opts.rootPath$assets/highlightjs/github.min.css" rel="stylesheet">
 
 	<style>
 		body {
@@ -48,7 +49,8 @@ main(opts) ::= <<
 	</div>
 
 	<div style="margin-top: 30px;">$opts.contents$</div>
-
+	<script src="$opts.rootPath$assets/highlightjs/highlight.min.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
 </body>
 
 </html>
