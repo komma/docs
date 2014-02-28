@@ -4,7 +4,12 @@
 
 = Framework
 
+* link:framework/composition/index.html[Object Composition]
+
+= Framework - Examples
+
 * link:framework/objectmapping/index.html[Basic object triple mapping]
+* link:framework/behaviour/index.html[Adding behaviour classes to implement application logic]
 
 = Editors
 

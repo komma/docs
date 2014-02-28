@@ -425,10 +425,10 @@ behaviour for _End_ should be relevant to _Tasks_ at all.
 
 There's nothing special to _Start_ though, it has outgoing transitions like
 other activities and it really just happens to be the initial activity in a
-process (see _ProcessInstanceSupport::start()_), so it uses the default
+process (see _ProcessInstanceSupport.start()_), so it uses the default
 behaviour. An _End_ activity, however, is the final activity in a process,
 which it should _end()_, and it also lacks outgoing transitions, which are the
-reasons for binding this third behaviour class to _IActivityInstance_.
+reasons for binding this third behaviour class to _ActivityInstance_.
 
 As for the _execute()_ method, consider what you learned about _@Precedes_ and
 the method chaining. _EndInstanceSupport_ precedes _ActivityInstanceSupport_
