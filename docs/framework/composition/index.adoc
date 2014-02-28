@@ -1,0 +1,152 @@
+= Object Composition
+
+toc::[]
+
+== Introduction
+
+An essential part of the KOMMA framework is the _Object Composition_ mechanism
+which we want to introduce here.
+
+The general idea for this feature originates with James Leigh of
+link:http://www.openrdf.org/elmo.jsp[Elmo] and
+link:http://www.openrdf.org/alibaba.jsp[AliBaba] and has been improved upon
+with link:http://asm.objectweg.org/[ASM] code generation and
+link:http://infinispan.org/[InfiniSpan] caching.
+
+When you work with _Entities_ in KOMMA, you are really working with generated
+_Proxy_ objects that are composed from a number of _Behaviour_ classes and
+offer, among others, bean-type interfaces to data in an RDF store.
+
+This sounds complicated. We best discuss this in some detail.
+
+== Proxies
+
+Let us start with how _Entities_ come into being and what goes on behind the
+scenes.
+
+If you create a KOMMA _Entity_, the framework
+
+. instantiates a plain Java _Object_ to be used as the _Proxy_
+. collects all RDF types from all bound _@Iri_ annotations to determine the
+  list of relevant _Behaviours_
+. adds every supported Java _interface_ from all found behaviour classes
+. generates code for the methods of all these interfaces, by creating
+  _Invocation Chains_ of the appropriate methods from each of the found
+  behaviour classes.
+
+There are a few behaviours inherently added by the framework to supply general
+functionality for handling the entities and the bean-type interface to the RDF
+store, but additional _Behaviour_ classes can be bound as needed.
+
+== Behaviour
+
+This interface is implemented by all classes that add some behaviour to a
+mapped entity. In steps 3 and 4 of generating the _Proxy_,
+link:http://asm.objectweg.org/[ASM] is used for merging the supported
+interfaces and method implementations from all bound _Behaviour_ classes.
+
+== Precedence and Invocation Chain
+
+When generating the code for the methods, the composition framework follows a
+partial ordering of the bound _Behaviours_, imposed on them by the _@Precedes_
+annotation. Each method is constructed as a chain of invocations, using this
+partial ordering, of all specific method implementations from the behaviours.
+
+Suppose we have:
+
+[source,java]
+----
+public abstract class SomeBasicThingSupport implements SomeBasicThing,
+		Behaviour<SomeBasicThing>, ISomeThing {
+
+	@Override
+	public void doSomeThing() {
+		// [...]
+	}
+}
+
+@Precedes(SomeBasicThingSupport.class)
+public abstract class SomeSpecificThingSupport implements SomeSpecificThing,
+		Behaviour<SomeSpecificThing>, ISomeThing {
+
+	@Override
+	public void doSomeThing() {
+		// [...]
+	}
+}
+----
+
+The result would be a generated _doSomeThing()_ method on the _Proxy_ object
+with an invocation chain of:
+_SomeSpecificThingSupport.doSomeThing() -> SomeBasicThingSupport.doSomeThing()_
+which, when executed, would call the methods, in order from left to right
+(pseudo-code):
+
+[source,java,pseudo-code]
+----
+public class SomeThing__PROXY {
+	// [...]
+	public void doSomeThing() {
+		SomeSpecificThingSupport__INSTANCE.doSomeThing();
+		SomeBasicThingSupport__INSTANCE.doSomeThing();
+	}
+}
+----
+
+=== Importance of Return Values
+
+After each invocation from the chain, a check is made against the return value
+(if any) to determine if the chain should proceed or be stopped, where a
+non-null value (or a boolean true) will cause it to be stopped, with the value
+used as final result for the method invocation as a whole.
+
+== Object-Triple-Mapping
+
+Now, as has been stated above, as one of their prominent features, KOMMA
+entities receive a behaviour implementing all the mapped bean-type accessor
+methods. This is automagically generated from built-in functionality and is
+similar in concept to JPA/Hibernate, except it maps directly to RDF properties.
+It supports both single- and multi-valued properties and includes
+link:http://infinispan.org/[InfiniSpan] caching for improved performance.
+
+Let us look at a short snippet from one of our
+link:https://github.com/komma/komma-examples[examples] that maps the interface
+_Person_ to an RDF type representing it and has accessor methods for _name_
+which it maps to an appropriate RDF property:
+
+[source,java]
+----
+package net.enilink.komma.example.objectmapping.model;
+
+import net.enilink.composition.annotations.Iri;
+
+@Iri("http://enilink.net/examples/objectmapping#Person")
+public interface Person {
+
+	@Iri("http://enilink.net/examples/objectmapping#name")
+	String getName();
+
+	void setName(String name);
+
+}
+----
+
+If we were to create such a Person entity and set a name on it:
+
+[source,java]
+----
+manager.create(Person.class).setName("John Q. Doe");
+----
+
+we would end up with RDF statements like this:
+
+[source,text/turtle]
+----
+_:node18hs02kdux1
+	a <http://enilink.net/examples/objectmapping#Person> ;
+	<http://enilink.net/examples/objectmapping#name> "John Q. Doe" .
+----
+
+For further information and an example regarding the details and application of
+such mappings, please refer to the
+link:../objectmapping[basic object triple mapping example].
