@@ -358,7 +358,7 @@ public abstract class TaskInstanceSupport implements TaskInstance,
 
 This behaviour uses the _@Precedes_ annotation to impose an order on the
 otherwise unordered set of behaviours available for an entity. As detailed in
-the link:../copmosition[composition documentation],
+the link:../composition[Object Composition documentation],
 this will affect the method chaining mechanism by enforcing an invocation
 order. For our specific case, this means that a call to a method of
 _IActivityInstance_ will execute the appropriate method of
