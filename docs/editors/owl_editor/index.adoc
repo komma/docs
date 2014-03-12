@@ -71,7 +71,19 @@ triple is inferred.
 
 image::rdf-properties.png[RDF properties view]
 
-Values for properties with a value type of RDF resource (e.g. OWL object properties) can be easily selected
+*New properties* may be added to a resource by using the _Add property_ action
+from the popup menu. This action adds a new row to the tree and opens an editor
+within the property column.
+
+*New values* for an existing property may be added by double-clicking the
+respective property, by using the _Add value_ action from the popup menu or
+by expanding the property node and inserting a value into the empty cell to the right.
+
+NOTE: You can also use the _Add value with wizard_ and _Edit value in dialog_ actions
+on the top right. The corresponding dialogs are currently only prototypical implementations
+and hence require some rework to allow efficient editing.
+
+Existing RDF resources as values (e.g. for OWL object properties) can be easily selected 
 by invoking the *content assist* with _Ctrl+Space_. The content assist can also be used within 
 http://www.w3.org/TR/owl2-manchester-syntax/[Manchester Syntax expressions].
 
