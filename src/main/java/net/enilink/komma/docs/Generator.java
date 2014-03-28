@@ -137,7 +137,7 @@ public class Generator {
 	private Path getOutputFilePath(Path srcFile, String suffix) {
 		String out = outputPath.resolve(inputPath.relativize(srcFile))
 				.toString();
-		out = out.replaceAll("\\..*$", "." + suffix);
+		out = out.substring(0, out.lastIndexOf(".")) + suffix;
 		Path outPath = Paths.get(out);
 		return outPath;
 	}
