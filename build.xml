@@ -1,45 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="net.enilink.komma.docs" default="generate" basedir=".">
+<project name="komma-docs" default="run" basedir=".">
+	<include file="../net.enilink.docs/base.xml" />
 
-	<path id="my-classpath">
-		<fileset dir="lib/">
-			<include name="*.jar" />
-		</fileset>
-	</path>
-
-	<target name="clean">
-		<delete dir="output" />
-	</target>
-
-	<target name="compile" depends="clean">
-		<mkdir dir="dist/classes" />
-		<javac includeantruntime="false" srcdir="src" destdir="dist/classes">
-			<classpath refid="my-classpath" />
-		</javac>
-	</target>
-
-	<target name="jar" depends="compile">
-		<mkdir dir="dist/jar" />
-		<jar destfile="dist/jar/docs.jar" basedir="dist/classes">
-			<manifest>
-				<attribute name="Main-Class" value="net.enilink.komma.docs.Test" />
-			</manifest>
-		</jar>
-	</target>
-
-	<target name="generate" depends="jar">
-		<!-- I did not implement an ant task, because of the fact that classloader 
-			problems occurred when running a respective proof-of-concept ant task -->
-		<java classname="net.enilink.komma.docs.Generator">
-			<classpath refid="my-classpath" />
-			<classpath>
-				<pathelement location="dist/jar/docs.jar" />
-			</classpath>
-			<arg value="docs" />
-			<arg value="output" />
-		</java>
-		<copy todir="output/assets">
-			<fileset dir="resources/assets" />
-		</copy>
+	<target name="run">
+	  	<antcall target="net.enilink.docs.generate" />
 	</target>
 </project>
