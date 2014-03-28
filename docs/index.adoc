@@ -1,6 +1,7 @@
 = Getting Started
 
-* link:getting_started/install/index.html[Install KOMMA using the update site]
+* link:getting_started/install_marketplace/index.html[Install KOMMA from the Eclipse Marketplace]
+* link:getting_started/install/index.html[Install KOMMA from the update site]
 
 = Framework
 
