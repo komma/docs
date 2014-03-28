@@ -1,11 +1,12 @@
-= Install KOMMA using an update site
+= Install KOMMA from the update site
 
-Installing KOMMA is pretty straight forward. At first you have to 
-get a current version of http://www.eclipse.org[Eclipse].
-In this tutorial I am using Eclipse Kepler Standard for Linux 
-(64bit). 
+Installing KOMMA is from the update site is easy!
 
-Afterwards you can install KOMMA clicking on 
+At first you have to get a current version of 
+http://www.eclipse.org[Eclipse]. In this tutorial I am 
+using Eclipse Kepler Standard for Linux (64bit). 
+
+Afterwards you can install KOMMA by clicking on 
 __Help > Install New Software__. Use the following update site.
 
 [source,text]
