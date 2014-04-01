@@ -52,7 +52,8 @@ The _Library_ class basically contains some static fields for easier working wit
 
 We furthermore define the _Person_ entity as a Java interface with properties such 
 as _dateOfBirth_ or _name_. The properties are mapped with the provided _@Iri_ annotation 
-on the getter method for each  property. 
+on the getter method for each property. Please note that we are using JavaBeans-like 
+getters and setters, i.e. functions are named set{Property} or get{Property} respectively. 
 
 [source,java]
 ----
@@ -87,7 +88,12 @@ Please note that KOMMA can work with _XMLGregorianCalendar_ for date bindings.
 
 === Document
 
-Documents, too, can be defined as a java interface. 
+Documents, too, can be defined as a java interface. In this case we are using a more 
+RDF-like convention to name our setters and getters. The set and get prefixes are gone. 
+Setters and Getters are distinguished by the parameter list in the respective method 
+signature. Please also note that our setters do have a return type, namely the 
+type of the document interface. Thus these setters allow for method chaining when 
+setting properties. 
 
 [source,java]
 ----
@@ -101,15 +107,15 @@ import net.enilink.composition.annotations.Iri;
 public interface Document {
 
 	@Iri(Library.NS + "dateOfRelease")
-	XMLGregorianCalendar getDateOfRelease();
+	XMLGregorianCalendar dateOfRelease();
 
-	void setDateOfRelease(XMLGregorianCalendar dateOfRelease);
-	
+	Document dateOfRelease(XMLGregorianCalendar dateOfRelease);
+
 	@Iri(Library.NS + "title")
-	String getTitle();
+	String title();
 
-	void setTitle(String title);
-	
+	Document title(String title);
+
 }
 ----
 
@@ -129,9 +135,9 @@ import net.enilink.composition.annotations.Iri;
 public interface Book extends Document {
 
 	@Iri(Library.NS + "author")
-	Set<Person> getAuthors();
+	Set<Person> authors();
 
-	void setAuthors(Set<Person> persons);
+	Document authors(Set<Person> persons);
 
 }
 ----
@@ -197,9 +203,15 @@ public class Main {
 
 	public static void main(String[] args)
 			throws DatatypeConfigurationException, RepositoryException {
-		/*
-		 * Create a sesame repository and an entity manager
-		 */
+
+		// Amongst others, access to data can be managed with KOMMA by
+		// implementations of IEntityManager. In this tutorial we create an
+		// EntityManager on top of Sesame's MemoryStore.
+		//
+		// We have to tell this manager to use the Book and Person interfaces to
+		// encapsulate access to instances and properties of Books or Persons.
+		// We have to register them as Concepts.
+
 		SailRepository dataRepository = new SailRepository(new MemoryStore());
 		dataRepository.initialize();
 		IEntityManager manager = createEntityManager(new ExampleModule(
@@ -210,42 +222,38 @@ public class Main {
 					}
 				}));
 
-		/*
-		 * Create a book and add some authors
-		 */
-		Book book = manager.createNamed(Library.URI.appendFragment("book1"),
+		// Create a book and add some authors
+		Book book = manager.createNamed(Library.NS_URI.appendFragment("book1"),
 				Book.class);
-		book.setTitle("Point of No Return");
-		book.getAuthors().add(
-				createPerson(manager, "person1", "Clint Eastwood", new Date()));
-		book.getAuthors().add(
-				createPerson(manager, "person2", "Marty McFly", new Date()));
-		/*
-		 * This results in the following RDF statements
-		 * @Prefix om: <http://enilink.net/examples/objectmapping#>
-		 * 
-		 * om:book1 om:title "Point of No Return"
-		 * 
-		 * om:person1 rdf:type om:Person
-		 * om:person1 om:name "Clint Eastwood"
-		 * om:person1 om:dateOfBirth "..."
-		 * om:book1 om:author person1
-		 * 
-		 * om:person2 rdf:type om:Person
-		 * om:person2 om:name "Marty McFly"
-		 * om:person2 om:dateOfBirth "..."
-		 * om:book1 om:author person2
-		 * 
-		 * Please note that KOMMA is able to handle sets, as shown by the 
-		 * representation of authors. Sets are represented as repeated 
-		 * properties, i.e. they are represented by multiple 
-		 * statements in the form of (book, author, person)
-		 */
+		// Set properties using method chaining
+		book.title("Point of No Return").dateOfRelease(getCurrentTime());
 
-		
-		/*
-		 * Do some queries!
-		 */
+		book.authors().add(
+				createPerson(manager, "person1", "Clint Eastwood", new Date()));
+		book.authors().add(
+				createPerson(manager, "person2", "Marty McFly", new Date()));
+
+		// This results in the following RDF statements
+		// @Prefix om: <http://enilink.net/examples/objectmapping#>
+		// om:book1 rdf:type om:Book
+		// om:book1 rdf:type om:Document
+		// om:book1 om:dateOfRelease "..."^^xsd:datetime
+		// om:book1 om:title "Point of No Return"
+		// om:person1 rdf:type om:Person
+		// om:person1 om:name "Clint Eastwood"
+		// om:person1 om:dateOfBirth "..."
+		// om:book1 om:author person1
+		// om:person2 rdf:type om:Person
+		// om:person2 om:name "Marty McFly"
+		// om:person2 om:dateOfBirth "..."
+		// om:book1 om:author person2
+		//
+		// Please note that KOMMA is able to handle sets, as shown by the
+		// representation of authors. Sets are represented as repeated
+		// properties, i.e. they are represented by multiple
+		// statements in the form of (book, author, person)
+
+		// Do some queries!
 		exampleRawQuery(manager);
 		System.out.println(".........");
 		exampleMappedQuery(manager);
@@ -255,7 +263,7 @@ public class Main {
 
 		System.out.println("Done!");
 	}
-	
+
 	private static IEntityManager createEntityManager(ExampleModule module) {
 		Injector injector = Guice.createInjector(module);
 		IEntityManagerFactory factory = injector
@@ -266,6 +274,105 @@ public class Main {
 
 	private static Person createPerson(IEntityManager manager, String id,
 			String name, Date date) {
+		XMLGregorianCalendar cal = getCurrentTime();
+		Person person = manager.createNamed(Library.NS_URI.appendFragment(id),
+				Person.class);
+		person.setName(name);
+		person.setDateOfBirth(cal);
+		// This will result in the following RDF statements
+
+		// person rdf:type <http://enilink.net/examples/objectmapping#Person>
+		// person <http://enilink.net/examples/objectmapping#name> "..."
+		// person <http://enilink.net/examples/objectmapping#dateOfBirth> "..."
+		return person;
+	}
+
+	private static void exampleRawQuery(IEntityManager manager) {
+		// We now can query the EntityManager for some data using SPARQL.
+
+		System.out.println("Do a raw query:");
+		IQuery<?> query = manager.createQuery( //
+				"PREFIX om: <" + Library.NS + ">" //
+						+ "SELECT ?title ?author ?authorDateOfBirth WHERE { " //
+						+ "?book om:title ?title . " //
+						+ "?book om:author ?person . " //
+						+ "?person om:name ?authorName . " //
+						+ "?person om:dateOfBirth ?authorDateOfBirth " //
+						+ "}");
+
+		// Expected output:
+		// LinkedHashBindings: {title=Point of No Return, author=..., ...}
+		// LinkedHashBindings: {title=Point of No Return, author=..., ...}
+
+		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
+			System.out.println(bindings);
+		}
+	}
+
+	private static void exampleMappedQuery(IEntityManager manager) {
+
+		// Besides querying data with SPARQL, we can also use our model
+		// interfaces for encapsulating data access to properties. In this
+		// function we simply select all instances of Person and print the
+		// properties defined by the respective interface.
+
+		System.out.println("Do a mapped query:");
+		IQuery<?> query = manager
+				.createQuery(
+						ISparqlConstants.PREFIX
+								+ "SELECT ?person ?clazz WHERE {?person rdf:type ?clazz}")
+				.setParameter("clazz", Library.NS_URI.appendLocalPart("Person"));
+
+		// Expected output:
+		// Name: Clint Eastwood
+		// Place of birth:null
+		// Name: Marty McFly
+		// Place of birth:null
+
+		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
+			Person person = (Person) bindings.get("person");
+			System.out.println("Name: " + person.getName());
+			System.out.println("Place of birth:" + person.getPlaceOfBirth());
+		}
+
+		// Please note, because of the fact that we did not set any place of
+		// birth. The respective getter returns null.
+	}
+
+	private static void exampleRemoveObjectAndQuery(IEntityManager manager,
+			Book book) {
+
+		// We delete the book and show that it is really gone.
+
+		System.out.println("Select all books");
+
+		IQuery<?> query = manager.createQuery(
+				ISparqlConstants.PREFIX
+						+ "SELECT ?book WHERE { ?book rdf:type ?clazz .  }")
+				.setParameter("clazz", Library.NS_URI.appendLocalPart("Book"));
+
+		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
+			System.out.println(bindings.get("book"));
+		}
+		manager.remove(book);
+
+		System.out.println("Select all books ... again!");
+		query = manager.createQuery(
+				ISparqlConstants.PREFIX
+						+ "SELECT ?book WHERE { ?book rdf:type ?clazz .  }")
+				.setParameter("clazz", Library.NS_URI.appendLocalPart("Book"));
+
+		// Expected output:
+		// Select all books
+		// http://enilink.net/examples/objectmapping#book1
+		// Select all books ... again!
+
+		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
+			System.out.println(bindings.get("book"));
+		}
+	}
+	
+	private static XMLGregorianCalendar getCurrentTime() {
 		GregorianCalendar c = new GregorianCalendar();
 		c.setTime(new Date());
 		XMLGregorianCalendar cal = null;
@@ -274,112 +381,9 @@ public class Main {
 		} catch (DatatypeConfigurationException e) {
 			throw new RuntimeException(e);
 		}
-
-		Person person = manager.createNamed(Library.URI.appendFragment(id),
-				Person.class);
-		person.setName(name);
-		person.setDateOfBirth(cal);
-		/*
-		 * This will result in the following RDF statements
-		 * person rdf:type <http://enilink.net/examples/objectmapping#Person>
-		 * person <http://enilink.net/examples/objectmapping#name> "..."
-		 * person <http://enilink.net/examples/objectmapping#dateOfBirth> "..."
-		 */
-		return person;
+		return cal;
 	}
-
-	private static void exampleRawQuery(IEntityManager manager) {
-		/*
-		 * We now can query the EntityManager for some data using SPARQL. 
-		 * We can override parameters to avoid defining long URIs 
-		 * containing messy strings.
-		 */
-		System.out.println("Do a raw query:");
-		IQuery<?> query = manager
-				.createQuery(
-						"SELECT ?titleValue ?authorName ?authorDateOfBirth WHERE { " //
-								+ "?book ?title ?titleValue . " //
-								+ "?book ?author ?person . " //
-								+ "?person ?name ?authorName . " //
-								+ "?person ?dateOfBirth ?authorDateOfBirth " //
-								+ "}")
-				.setParameter("author", Library.URI.appendLocalPart("author"))
-				.setParameter("name", Library.URI.appendLocalPart("name"))
-				.setParameter("dateOfBirth",
-						Library.URI.appendFragment("dateOfBirth"))
-				.setParameter("title", Library.URI.appendLocalPart("title"));
-
-		/*
-		 * Expected output:
-		 * LinkedHashBindings: {titleValue=Point of No Return, authorName=Clint Eastwood, ...}
-		 * LinkedHashBindings: {titleValue=Point of No Return, authorName=Marty McFly, ...}
-		 */
-		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
-			System.out.println(bindings);
-		}
-	}
-
-	private static void exampleMappedQuery(IEntityManager manager) {
-		/*
-		 * Besides querying data with SPARQL, we can also use our model interfaces 
-		 * for encapsulating data access to properties. In this function we simply 
-		 * select all instances of Person and print the properties defined by the 
-		 * respective interface.
-		 */
-		System.out.println("Do a mapped query:");
-		IQuery<?> query = manager
-				.createQuery(
-						ISparqlConstants.PREFIX
-								+ "SELECT ?person ?clazz WHERE {?person rdf:type ?clazz}")
-				.setParameter("clazz", Library.URI.appendLocalPart("Person"));
-
-		/*
-		 * Expected output:
-		 * Name: Clint Eastwood
-		 * Place of birth:null
-		 * Name: Marty McFly
-		 * Place of birth:null
-		 */
-		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
-			Person person = (Person) bindings.get("person");
-			System.out.println("Name: " + person.getName());
-			System.out.println("Place of birth:" + person.getPlaceOfBirth());
-		}
-	}
-
-	private static void exampleRemoveObjectAndQuery(IEntityManager manager,
-			Book book) {
-		/*
-		 * We delete the book and show that it is really gone.
-		 */
-		System.out.println("Select all books");
-
-		IQuery<?> query = manager.createQuery(
-				ISparqlConstants.PREFIX
-						+ "SELECT ?book WHERE { ?book rdf:type ?clazz .  }")
-				.setParameter("clazz", Library.URI.appendLocalPart("Book"));
-
-		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
-			System.out.println(bindings);
-		}
-		manager.remove(book);
-
-		System.out.println("Select all books ... again!");
-		query = manager.createQuery(
-				ISparqlConstants.PREFIX
-						+ "SELECT ?book WHERE { ?book rdf:type ?clazz .  }")
-				.setParameter("clazz", Library.URI.appendLocalPart("Book"));
-
-		/*
-		 * Select all books
-		 * LinkedHashBindings: {book=http://enilink.net/examples/objectmapping#book1}
-		 * Select all books ... again!
-		 */
-		for (IBindings<?> bindings : query.evaluate(IBindings.class)) {
-			System.out.println(bindings);
-		}
-	}
-
+	
 }
 ----
 
