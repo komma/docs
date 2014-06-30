@@ -22,7 +22,7 @@ You can also simple create an empty file with the associated extension of an RDF
 
 image::wizard.png[The ontology wizard]
 
-The wizard asks you for a project, a file name, a file format and an URI of the new ontology.
+The wizard asks you for a project, a file name, a file format and a URI of the new ontology.
 The wizard creates a file with the following content :
 
 ----
@@ -40,7 +40,7 @@ image::ontology-page.png[The ontology page]
 
 The imports dialog allows to select KOMMA's built-in ontologies as well as
 other ontologies within the same project or from referenced projects.
-Additionally, it is possible to simply input an URI of an external file.
+Additionally, it is possible to simply input a URI of an external file.
 
 == Classes and properties
 
