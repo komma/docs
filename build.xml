@@ -3,6 +3,13 @@
 	<include file="../net.enilink.docs/base.xml" />
 
 	<target name="run">
-	  	<antcall target="net.enilink.docs.generate" />
+		<antcall target="net.enilink.docs.generate">
+			<param name="source" value="docs" />
+			<param name="output" value="output" />
+			<param name="template" value="templates/content.stg" />
+		</antcall>
+		<copy todir="output">
+			<fileset dir="resources" />
+		</copy>
 	</target>
 </project>
