@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="komma-docs" default="run" basedir=".">
-	<include file="../net.enilink.docs/base.xml" />
+	<include file="net.enilink.docs/base.xml" />
 
 	<target name="run">
 		<antcall target="net.enilink.docs.generate">
