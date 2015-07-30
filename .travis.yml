@@ -1,1 +1,2 @@
+# simply build the documentation with ant
 script: ant
