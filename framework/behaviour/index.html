@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>KOMMA Documentation - Adding behaviour classes to implement application logic</title>
+
+    <link href="../../assets/bootstrap/css/bootstrap_yeti-asciidoc.min.css" rel="stylesheet">
+    <link href="../../assets/bootstrap/css/custom.css" rel="stylesheet">
+    <link href="../../assets/highlightjs/github.min.css" rel="stylesheet">
+
+	<style>
+		body {
+			padding-bottom: 50px;
+		}
+
+		.highlight {
+			width: 100%;
+		}
+
+		#toctitle {
+			display: none;
+		}
+
+		img {
+			display: block;
+			margin: auto; 
+			margin-top: 50px;
+			margin-bottom: 50px;
+			max-width: 100%;
+		}
+	</style>
+
+</head>
+
+<body class="container">
+
+	<div id="navigation">
+		<img src="../../assets/logo.png" class="pull-right" />
+		<div class="page-header" style="padding-top: 25px; margin-right: 150px;">
+		  	<strong>
+
+			  		<a href="../../index.html">&laquo; Back to Overview</a>
+
+		  	</strong><br/>
+		</div>
+	</div>
+
+	<div style="margin-top: 30px;"><h1>Adding behaviour classes to implement application logic</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div id="toc" class="toc2">
+<div id="toctitle" class="title">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_prerequisites">1. Prerequisites</a></li>
+<li><a href="#_introduction">2. Introduction</a></li>
+<li><a href="#_the_process_engine">3. The process engine</a></li>
+<li><a href="#_a_simple_process_api">4. A simple process API</a></li>
+<li><a href="#_implementation">5. Implementation</a></li>
+<li><a href="#_precedence">6. Precedence</a></li>
+<li><a href="#_behaviour_registration">7. Behaviour registration</a></li>
+<li><a href="#_usage">8. Usage</a></li>
+<li><a href="#_tl_dr">9. TL;DR</a></li>
+</ul>
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">1. Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example makes use of KOMMA&#8217;s object mapping feature as described in
+<a href="../objectmapping/index.html">Basic object triple mapping</a>
+and it assumes you are familiar with that feature.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction">2. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>KOMMA allows for binding classes with application logic, which we call
+<em>Behaviours</em>, to mapped <em>Entities</em>.
+In this tutorial, we want to show you how to use this feature.</p>
+</div>
+<div class="paragraph">
+<p>The example we are going to use is a (very simple) process engine. This is
+somewhat complex but don&#8217;t be alarmed, it is stripped down to a bare minimum
+to highlight the general idea while still being a functional example.</p>
+</div>
+<div class="paragraph">
+<p>The full source code of this tutorial is available in the
+<a href="https://github.com/komma/komma-examples">KOMMA examples repository on github</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_process_engine">3. The process engine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To keep matters as simple as possible, we are going to have only four basic
+elements: <em>Processes</em> consist of a number of <em>Activities</em> (some of which
+are going to be <em>Tasks</em> requiring manual completion) that are connected by
+outgoing <em>Transitions</em>.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, we need to distinguish between static and dynamic aspects for
+defining and executing our processes. The mappings are therefore separated into
+<em>DefinitionAspects</em> and <em>RuntimeAspects</em> that are themselves mapped entities
+from which the other model elements are derived (yes, you can use inheritance
+for mapped entities).</p>
+</div>
+<div class="paragraph">
+<p>We arrive at the following application model:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DefinitionAspect</p>
+<div class="ulist">
+<ul>
+<li>
+<p>ProcessDefinition</p>
+</li>
+<li>
+<p>ActivityDefinition</p>
+<div class="ulist">
+<ul>
+<li>
+<p>TaskDefinition</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Transition (there is no dynamic aspect to transitions)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>RuntimeAspect</p>
+<div class="ulist">
+<ul>
+<li>
+<p>ProcessInstance</p>
+</li>
+<li>
+<p>ActivityInstance</p>
+<div class="ulist">
+<ul>
+<li>
+<p>TaskInstance</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let us just pick <em>ProcessDefinition</em> and have a look at it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.model;
+
+import java.util.Set;
+
+import net.enilink.composition.annotations.Iri;
+
+@Iri("http://enilink.net/komma/example/behaviour#ProcessDefinition")
+public interface ProcessDefinition extends DefinitionAspect {
+
+	@Iri("http://enilink.net/komma/example/behaviour#hasName")
+	String getName();
+
+	void setName(String name);
+
+	@Iri("http://enilink.net/komma/example/behaviour#hasActivity")
+	Set&lt;ActivityDefinition&gt; getHasActivity();
+
+	void setHasActivity(Set&lt;? extends ActivityDefinition&gt; hasActivity);
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This one maps two properties, one being the name for the process, the other
+representing the activities it consists of.</p>
+</div>
+<div class="paragraph">
+<p>For brevity, the rest of these mappings are omitted here, suffice to say they
+are equally trivial. Please refer to the examples repository on github for the
+details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_simple_process_api">4. A simple process API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before defining the API for our runtime, there is one caveat to discuss:
+a <em>Behaviour</em> needs to be bound to an already mapped <em>Entity</em>, so logic that
+applies to definition aspects needs to be separated from logic that applies to
+runtime instances.</p>
+</div>
+<div class="paragraph">
+<p>To use <em>Process</em> as an example, the behaviour we are going to bind to
+<em>ProcessDefinition</em> allows the creation of a matching <em>ProcessInstance</em>.
+We then bind another behaviour to <em>ProcessInstance</em> which provides the methods
+that operate on the runtime instance.</p>
+</div>
+<div class="paragraph">
+<p>With that out of the way, this is what our very basic API for process execution
+looks like (package and import statements omitted for brevity):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">public interface IProcessDefinition {
+	public ProcessInstance createProcessInstance();
+}
+
+public interface IProcessInstance {
+	public ProcessInstance start();
+	public boolean end();
+}
+
+public interface IActivityDefinition {
+	public ActivityInstance createActivityInstance(
+			ProcessInstance processInstance);
+}
+
+public interface IActivityInstance {
+	public boolean enter();
+	public boolean execute();
+	public boolean leave(String transitionName);
+}
+
+public interface ITaskInstance extends IActivityInstance {
+	public boolean complete(String transitionName);
+}
+
+public interface ITransition {
+	public boolean activate(ProcessInstance processInstance);
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The fact that <em>ITaskInstance</em> extends <em>IActivityInstance</em> is relevant for
+the discussion below.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This concludes the definition of our mapped entities and the API we want to use
+for our business logic (the process runtime).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementation">5. Implementation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let us now take a look at the <em>Behaviour</em> class implementing our business
+method for <em>IProcessDefinition</em> to get an idea about how these behaviour
+implementations look like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.runtime;
+
+import java.util.UUID;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.core.URI;
+import net.enilink.komma.example.behaviour.IProcessDefinition;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ProcessDefinition;
+import net.enilink.komma.example.behaviour.model.ProcessInstance;
+
+public abstract class ProcessDefinitionSupport implements ProcessDefinition,
+		Behaviour&lt;ProcessDefinition&gt;, IProcessDefinition {
+
+	@Override
+	public ProcessInstance createProcessInstance() {
+		URI piUri = getURI().appendFragment(
+				"ProcessInstance_" + getURI().fragment() + "_"
+						+ UUID.randomUUID());
+
+		ProcessInstance pi = getEntityManager().createNamed(piUri,
+				ProcessInstance.class);
+
+		pi.setUsesDefinition(getBehaviourDelegate());
+
+		pi = ((IProcessInstance) pi).start();
+
+		return pi;
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the actual code for <em>createProcessInstance()</em> is pretty
+straightforward. It really just creates a new named <em>ProcessInstance</em>, sets the
+mapped entity on which it was called as the associated <em>ProcessDefinition</em>,
+then returns the new <em>ProcessInstance</em> after calling <em>start()</em> on it (using
+another of the API methods we defined).</p>
+</div>
+<div class="paragraph">
+<p>With respect to the boilerplate code, we only define an abstract class (the
+convention KOMMA uses is an appended <em>Support</em> suffix) that implements our
+mapped entity, a <em>Behaviour&lt;&gt;</em> for the mapped entity and (optional) other
+interfaces (in our case, the API we defined above).</p>
+</div>
+<div class="paragraph">
+<p>Now, there must surely be some magic hidden somewhere in the implementation of
+<em>IProcessInstance::start()</em>? See for yourself:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityDefinition;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ActivityDefinition;
+import net.enilink.komma.example.behaviour.model.ProcessInstance;
+
+public abstract class ProcessInstanceSupport implements ProcessInstance,
+		Behaviour&lt;ProcessInstance&gt;, IProcessInstance {
+
+	@Override
+	public ProcessInstance start() {
+		setState(STATE_ACTIVE);
+
+		// find and activate the start activity
+		// for simplicity, just use name=="start" as indicator
+		for (ActivityDefinition activityDef : getUsesDefinition()
+				.getHasActivity()) {
+			if ("start".equals(activityDef.getName())) {
+				((IActivityDefinition) activityDef)
+						.createActivityInstance(getBehaviourDelegate());
+			}
+		}
+
+		return getBehaviourDelegate();
+	}
+
+	@Override
+	public boolean end() {
+		setState(STATE_ENDED);
+
+		return true;
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Huh, this doesn&#8217;t look very different, after all! What&#8217;s the deal here, is
+there more to it?</p>
+</div>
+<div class="paragraph">
+<p><em>Why, yes, there is!</em></p>
+</div>
+<div class="paragraph">
+<p>There&#8217;s a common mechanism that handles the mapped <em>Entities</em>, their accessor
+methods to the underlying RDF store and the <em>Behaviours</em> that are bound to
+them. We call this <a href="../composition">Object Composition</a> and it is actually
+a very essential part to all of KOMMA.</p>
+</div>
+<div class="paragraph">
+<p>Now, for our example, you don&#8217;t need to understand the details of how the
+composition mechanism does all the work for you, the general outline will do
+fine. What it boils down to here is that multiple <em>Behaviours</em> can be available
+for a given <em>Entity</em> and interface. If we take a close look at <em>TaskInstance</em>,
+we find that there are actually three <em>Behaviour</em> classes at work (*):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>ActivityInstanceSupport (the base behaviour for <em>all</em> activities)</p>
+</li>
+<li>
+<p>TaskInstanceSupport (specific behaviour for <em>Tasks</em>)</p>
+</li>
+<li>
+<p>EndInstanceSupport (specific behaviour for <em>End</em> activities **)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let us look at the first one from that list:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.ITransition;
+import net.enilink.komma.example.behaviour.model.ActivityInstance;
+import net.enilink.komma.example.behaviour.model.Transition;
+
+public abstract class ActivityInstanceSupport implements ActivityInstance,
+		Behaviour&lt;ActivityInstance&gt;, IActivityInstance {
+
+	@Override
+	public boolean enter() {
+		setState(STATE_OPEN);
+		getProcessInstance().setCurrentActivity(getBehaviourDelegate());
+
+		// can be implemented by more specialized support classes
+		// be sure to call them and don't just use this.execute()
+		((IActivityInstance) getBehaviourDelegate()).execute();
+
+		return true;
+	}
+
+	@Override
+	public boolean execute() {
+		if (!STATE_OPEN.equals(getState())) {
+			throw new IllegalStateException("Activity " + getURI()
+					+ " is not open.");
+		}
+
+		// can be implemented by more specialized support classes
+		// be sure to call them and don't just use this.leave()
+		((IActivityInstance) getBehaviourDelegate()).leave(null);
+
+		return true;
+	}
+
+	@Override
+	public boolean leave(String transitionName) {
+
+		// [... get the transition matching the given name ...]
+
+		setState(STATE_COMPLETED);
+		setTransitionName(transitions[t].getName());
+
+		((ITransition) transitions[t]).activate(getProcessInstance());
+
+		return true;
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, as stated above, this is the base behaviour available for <em>all</em>
+<em>ActivityInstances</em>, including those for <em>Tasks</em>. These also have their own
+specific behaviour, which we&#8217;ll get to in a minute.</p>
+</div>
+<div class="paragraph">
+<p>An <em>important</em> detail here is the way this base behaviour invokes the other
+methods. Note that it does <em>not</em> call its own implementations directly but also
+uses the composition mechanism to invoke the correct one.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+This is due to the behaviours not actually inheriting from each other,
+making virtual methods/dynamic dispatch unavailable for them. We can still
+achieve the desired result, however, when we use the composition mechanism as
+shown in the example.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_precedence">6. Precedence</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you take a look at the second of the behaviours relevant to <em>TaskInstances</em>
+from the list above, you&#8217;ll notice something we haven&#8217;t shown you yet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.annotations.Precedes;
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.ITaskInstance;
+import net.enilink.komma.example.behaviour.model.TaskInstance;
+
+@Precedes(ActivityInstanceSupport.class)
+public abstract class TaskInstanceSupport implements TaskInstance,
+		Behaviour&lt;TaskInstance&gt;, ITaskInstance {
+
+	@Override
+	public boolean execute() {
+		// this is a wait-state, not a normal activity
+		setState(STATE_AWAITING_COMPLETION);
+
+		// returning true here signals the end of the method chaining; in other
+		// words, ActivityInstanceSupport.execute() will NOT be called
+		return true;
+	}
+
+	@Override
+	public boolean complete(String transitionName) {
+		if (!STATE_AWAITING_COMPLETION.equals(getState())) {
+			throw new IllegalStateException("Task " + getURI()
+					+ " is not awaiting completion.");
+		}
+
+		((IActivityInstance) getBehaviourDelegate()).leave(transitionName);
+
+		return true;
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This behaviour uses the <em>@Precedes</em> annotation to impose an order on the
+otherwise unordered set of behaviours available for an entity. As detailed in
+the <a href="../composition">Object Composition documentation</a>,
+this will affect the method chaining mechanism by enforcing an invocation
+order. For our specific case, this means that a call to a method of
+<em>IActivityInstance</em> will execute the appropriate method of
+<em>TaskInstanceSupport</em> before that of <em>ActivityInstanceSupport</em> (this is due to
+<em>ITaskInstance</em> extending <em>IActivityInstance</em>, as noted above).</p>
+</div>
+<div class="paragraph">
+<p>An important aspect of the method chaining is the influence of the return
+value. Returning something non-null (or a boolean true) results in the chain
+being stopped, whereas returning null (or false) causes the chain to continue
+with the method on the next behaviour.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Imagine the return value as a kind of flag indicating something like
+"We&#8217;re done here, I managed to come up with the answer".
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With that being said, let&#8217;s look at the third behaviour relevant to
+<em>ActivityInstances</em> (and therefore, as mentioned, to <em>TaskInstances</em> as well)
+from the list above. This is more interesting, because it relies on <em>@Precedes</em>
+as well as on the subtleties of return value and invocation chain:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.behaviour.runtime;
+
+import net.enilink.composition.annotations.Precedes;
+import net.enilink.composition.traits.Behaviour;
+import net.enilink.komma.example.behaviour.IActivityInstance;
+import net.enilink.komma.example.behaviour.IProcessInstance;
+import net.enilink.komma.example.behaviour.model.ActivityInstance;
+
+@Precedes(ActivityInstanceSupport.class)
+public abstract class EndInstanceSupport implements ActivityInstance,
+		Behaviour&lt;ActivityInstance&gt;, IActivityInstance {
+
+	@Override
+	public boolean execute() {
+		// simplicity: name=="end" designates the end activity
+		if (!"end".equals(getUsesDefinition().getName())) {
+			// returning false causes the invocation of this method on the next
+			// behaviour in the chain (here: ActivityInstanceSupport.execute())
+			return false;
+		}
+
+		setState(STATE_COMPLETED);
+
+		// end activities just terminate the enclosing process instance
+		// they cannot be left as there are no outgoing transitions
+		((IProcessInstance) getProcessInstance()).end();
+
+		return true;
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Prior to explaining this in detail, let us review our example.</p>
+</div>
+<div class="paragraph">
+<p>In an effort to keep the process model simple, <em>End</em> and <em>Start</em> are just plain
+activities, only distinguished by their names ("start" or "end", respectively).
+For the implementation, this means that any special behaviour needs to be bound
+to the base entity <em>ActivityInstance</em> and as such results in it being applied
+to <em>all</em> such instances, including those for <em>Tasks</em>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+*,** Hopefully, this also clears up any questions about why this special
+behaviour for <em>End</em> should be relevant to <em>Tasks</em> at all.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>There&#8217;s nothing special to <em>Start</em> though, it has outgoing transitions like
+other activities and it really just happens to be the initial activity in a
+process (see <em>ProcessInstanceSupport.start()</em>), so it uses the default
+behaviour. An <em>End</em> activity, however, is the final activity in a process,
+which it should <em>end()</em>, and it also lacks outgoing transitions, which are the
+reasons for binding this third behaviour class to <em>ActivityInstance</em>.</p>
+</div>
+<div class="paragraph">
+<p>As for the <em>execute()</em> method, consider what you learned about <em>@Precedes</em> and
+the method chaining. <em>EndInstanceSupport</em> precedes <em>ActivityInstanceSupport</em>
+(no particular order with respect to <em>TaskInstanceSupport</em> given) and is going
+to be called for <em>all</em> activities. It is, therefore, imperative that the
+execute method does its special handling only when it actually deals with an
+<em>End</em> activity, and falls back to the chain in all other cases (remember that
+returning something null or a boolean false means that the chain continues with
+- or falls back to - the next implementation up the chain).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_behaviour_registration">7. Behaviour registration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We have now taken a look at what needs to be done to implement our process
+runtime using <em>Behaviours</em> and discussed a few details of doing so, but we
+still haven&#8217;t seen how the binding of these behaviours to the mapped entities
+from our model works.</p>
+</div>
+<div class="paragraph">
+<p>As mentioned in the prerequisites, this example assumes you have taken a look
+at the object mapping example, so this should look familiar.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The example is also using code to set up the KOMMA framework from the
+object mapping example, so be sure to import both projects into your workspace.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">public static void main(String[] args) throws RepositoryException {
+
+	// create a sesame repository
+	SailRepository dataRepository = new SailRepository(new MemoryStore());
+	dataRepository.initialize();
+
+	// create an entity manager and register concepts
+	IEntityManager manager = createEntityManager(new ExampleModule(
+			dataRepository, new KommaModule() {
+				{
+					// model classes, definition
+					addConcept(DefinitionAspect.class);
+					addConcept(ProcessDefinition.class);
+					addConcept(ActivityDefinition.class);
+					addConcept(TaskDefinition.class);
+					addConcept(Transition.class);
+					// model classes, runtime
+					addConcept(RuntimeAspect.class);
+					addConcept(ProcessInstance.class);
+					addConcept(ActivityInstance.class);
+					addConcept(TaskInstance.class);
+
+					// behaviour classes
+					addBehaviour(ProcessDefinitionSupport.class);
+					addBehaviour(ProcessInstanceSupport.class);
+					addBehaviour(ActivityDefinitionSupport.class);
+					addBehaviour(ActivityInstanceSupport.class);
+					addBehaviour(TaskDefinitionSupport.class);
+					addBehaviour(TaskInstanceSupport.class);
+					addBehaviour(EndInstanceSupport.class);
+					addBehaviour(TransitionSupport.class);
+				}
+			}));
+
+	demonstrateProcess(manager);
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you compare this to the object mapping example, apart from obviously adding
+the entity classes necessary for our process model, we simply add our behaviour
+implementations, using the appropriately named <em>addBehaviour()</em> method - <em>and
+that&#8217;s it!</em></p>
+</div>
+<div class="paragraph">
+<p>This is really all that needs to be done for registering them. At runtime, the
+composition framework uses the <em>@Iri</em> annotations to do the mapping and bind
+the behaviours to the entities as needed.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_usage">8. Usage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let us demonstrate our simple process runtime by defining and executing a
+short demo process. Again, the idea being to keep this simple, this will do:</p>
+</div>
+<div class="paragraph">
+<p>Process <em>DMC-12 Testrun</em>: Start &#8594; Task1 <em>Invent Flux Capacitor</em> (Doc)
+&#8594; Task2 <em>Experience Time Travel</em> (Einstein) &#8594; End</p>
+</div>
+<div class="paragraph">
+<p>Fast forward beyond the initialization step where we define this process with
+its activities and their transitions to the part where we execute it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">private static void demonstrateProcess(IEntityManager manager) {
+	// [... initialize the example process ...]
+
+	// create and start a new instance of the process
+	ProcessInstance processInstance = ((IProcessDefinition) processDef)
+			.createProcessInstance();
+
+	// [... create some output ...]
+
+	ActivityInstance ai1 = processInstance.getCurrentActivity();
+
+	// [... check state, create some output ...]
+
+	((ITaskInstance) ai1).complete(null);
+
+	// [... refresh, create some output ...]
+
+	ActivityInstance ai2 = processInstance.getCurrentActivity();
+
+	// [... check state, create some output ...]
+
+	((ITaskInstance) ai2).complete(null);
+
+	// [... refresh, create more output ...]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Though a few things have been omitted in this snippet, the most relevant parts
+where we actually use our API from within the simple test program show that
+working with the behaviour classes is pretty straightforward.</p>
+</div>
+<div class="paragraph">
+<p>If you run the program from the example using our short demo process, the
+output looks somewhat like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="text language-text">process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=active activity='Invent Flux Capacitor'
+complete()ing current task: name='Invent Flux Capacitor', for='Emmett Lathrop 'Doc' Brown', state=awaiting_completion...
+process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=active activity='Experience Time Travel'
+complete()ing current task: name='Experience Time Travel', for='Einstein', state=awaiting_completion...
+process urn:enilink.net:komma:behaviour-example#ProcessInstance_Process1_0e670c29-b3e3-4ea7-a1d0-9d6db521a3f6 is now in: state=ended activity='end'
+**** Success! Process 'DMC-12 Testrun' has completed! ****
+the following activities have been created:
+urn:enilink.net:komma:behaviour-example#TaskInstance_ActivityTask1_031ace64-9543-49bb-b73b-dc96d2823280 name='Invent Flux Capacitor' state=completed transition=toTask2
+urn:enilink.net:komma:behaviour-example#TaskInstance_ActivityTask2_730e8b4b-fcac-449b-85fd-16ea6b649451 name='Experience Time Travel' state=completed transition=toEnd
+urn:enilink.net:komma:behaviour-example#ActivityInstance_ActivityStart_24ce367a-21e1-43f5-b4c6-4cd0e86d26c3 name='start' state=completed transition=toTask1
+urn:enilink.net:komma:behaviour-example#ActivityInstance_ActivityEnd_1d45a4cb-bd83-4b2b-ad5e-3eaa10ede423 name='end' state=completed transition=null</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tl_dr">9. TL;DR</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Using KOMMA behaviours to bind business logic to mapped entities is a very
+easy way to implement an application on top of RDF data.</p>
+</div>
+<div class="paragraph">
+<p>You could start working with it right now!</p>
+</div>
+</div>
+</div></div>
+	<script src="../../assets/highlightjs/highlight.min.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i, s, o, g, r, a, m) {
+			i['GoogleAnalyticsObject'] = r;
+			i[r] = i[r] || function() {
+				(i[r].q = i[r].q || []).push(arguments)
+			}, i[r].l = 1 * new Date();
+			a = s.createElement(o), m = s.getElementsByTagName(o)[0];
+			a.async = 1;
+			a.src = g;
+			m.parentNode.insertBefore(a, m)
+		})(window, document, 'script',
+				'//www.google-analytics.com/analytics.js', 'ga');
+
+		ga('create', 'UA-49874284-1', 'enilink.net');
+		ga('send', 'pageview');
+	</script>
+</body>
+
+</html>

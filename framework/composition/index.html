@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>KOMMA Documentation - Object Composition</title>
+
+    <link href="../../assets/bootstrap/css/bootstrap_yeti-asciidoc.min.css" rel="stylesheet">
+    <link href="../../assets/bootstrap/css/custom.css" rel="stylesheet">
+    <link href="../../assets/highlightjs/github.min.css" rel="stylesheet">
+
+	<style>
+		body {
+			padding-bottom: 50px;
+		}
+
+		.highlight {
+			width: 100%;
+		}
+
+		#toctitle {
+			display: none;
+		}
+
+		img {
+			display: block;
+			margin: auto; 
+			margin-top: 50px;
+			margin-bottom: 50px;
+			max-width: 100%;
+		}
+	</style>
+
+</head>
+
+<body class="container">
+
+	<div id="navigation">
+		<img src="../../assets/logo.png" class="pull-right" />
+		<div class="page-header" style="padding-top: 25px; margin-right: 150px;">
+		  	<strong>
+
+			  		<a href="../../index.html">&laquo; Back to Overview</a>
+
+		  	</strong><br/>
+		</div>
+	</div>
+
+	<div style="margin-top: 30px;"><h1>Object Composition</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div id="toc" class="toc2">
+<div id="toctitle" class="title">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">1. Introduction</a></li>
+<li><a href="#_proxies">2. Proxies</a></li>
+<li><a href="#_behaviour">3. Behaviour</a></li>
+<li><a href="#_precedence_and_invocation_chain">4. Precedence and Invocation Chain</a></li>
+<li>
+<ul class="sectlevel2">
+<li><a href="#_importance_of_return_values">4.1. Importance of Return Values</a></li>
+</ul>
+</li>
+<li><a href="#_object_triple_mapping">5. Object-Triple-Mapping</a></li>
+</ul>
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction">1. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An essential part of the KOMMA framework is the <em>Object Composition</em> mechanism
+which we want to introduce here.</p>
+</div>
+<div class="paragraph">
+<p>The general idea for this feature originates with James Leigh of
+<a href="http://www.openrdf.org/elmo.jsp">Elmo</a> and
+<a href="http://www.openrdf.org/alibaba.jsp">AliBaba</a> and has been improved upon
+with <a href="http://asm.objectweg.org/">ASM</a> code generation and
+<a href="http://infinispan.org/">InfiniSpan</a> caching.</p>
+</div>
+<div class="paragraph">
+<p>When you work with <em>Entities</em> in KOMMA, you are really working with generated
+<em>Proxy</em> objects that are composed from a number of <em>Behaviour</em> classes and
+offer, among others, bean-type interfaces to data in an RDF store.</p>
+</div>
+<div class="paragraph">
+<p>This sounds complicated. We best discuss this in some detail.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_proxies">2. Proxies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let us start with how <em>Entities</em> come into being and what goes on behind the
+scenes.</p>
+</div>
+<div class="paragraph">
+<p>If you create a KOMMA <em>Entity</em>, the framework</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>instantiates a plain Java <em>Object</em> to be used as the <em>Proxy</em></p>
+</li>
+<li>
+<p>collects all RDF types from all bound <em>@Iri</em> annotations to determine the
+list of relevant <em>Behaviours</em></p>
+</li>
+<li>
+<p>adds every supported Java <em>interface</em> from all found behaviour classes</p>
+</li>
+<li>
+<p>generates code for the methods of all these interfaces, by creating
+<em>Invocation Chains</em> of the appropriate methods from each of the found
+behaviour classes.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>There are a few behaviours inherently added by the framework to supply general
+functionality for handling the entities and the bean-type interface to the RDF
+store, but additional <em>Behaviour</em> classes can be bound as needed.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_behaviour">3. Behaviour</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This interface is implemented by all classes that add some behaviour to a
+mapped entity. In steps 3 and 4 of generating the <em>Proxy</em>,
+<a href="http://asm.objectweg.org/">ASM</a> is used for merging the supported
+interfaces and method implementations from all bound <em>Behaviour</em> classes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_precedence_and_invocation_chain">4. Precedence and Invocation Chain</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When generating the code for the methods, the composition framework follows a
+partial ordering of the bound <em>Behaviours</em>, imposed on them by the <em>@Precedes</em>
+annotation. Each method is constructed as a chain of invocations, using this
+partial ordering, of all specific method implementations from the behaviours.</p>
+</div>
+<div class="paragraph">
+<p>Suppose we have:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">public abstract class SomeBasicThingSupport implements SomeBasicThing,
+		Behaviour&lt;SomeBasicThing&gt;, ISomeThing {
+
+	@Override
+	public void doSomeThing() {
+		// [...]
+	}
+}
+
+@Precedes(SomeBasicThingSupport.class)
+public abstract class SomeSpecificThingSupport implements SomeSpecificThing,
+		Behaviour&lt;SomeSpecificThing&gt;, ISomeThing {
+
+	@Override
+	public void doSomeThing() {
+		// [...]
+	}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The result would be a generated <em>doSomeThing()</em> method on the <em>Proxy</em> object
+with an invocation chain of:
+<em>SomeSpecificThingSupport.doSomeThing() &#8594; SomeBasicThingSupport.doSomeThing()</em>
+which, when executed, would call the methods, in order from left to right
+(pseudo-code):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">public class SomeThing__PROXY {
+	// [...]
+	public void doSomeThing() {
+		SomeSpecificThingSupport__INSTANCE.doSomeThing();
+		SomeBasicThingSupport__INSTANCE.doSomeThing();
+	}
+}</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_importance_of_return_values">4.1. Importance of Return Values</h3>
+<div class="paragraph">
+<p>After each invocation from the chain, a check is made against the return value
+(if any) to determine if the chain should proceed or be stopped, where a
+non-null value (or a boolean true) will cause it to be stopped, with the value
+used as final result for the method invocation as a whole.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_object_triple_mapping">5. Object-Triple-Mapping</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, as has been stated above, as one of their prominent features, KOMMA
+entities receive a behaviour implementing all the mapped bean-type accessor
+methods. This is automagically generated from built-in functionality and is
+similar in concept to JPA/Hibernate, except it maps directly to RDF properties.
+It supports both single- and multi-valued properties and includes
+<a href="http://infinispan.org/">InfiniSpan</a> caching for improved performance.</p>
+</div>
+<div class="paragraph">
+<p>Let us look at a short snippet from one of our
+<a href="https://github.com/komma/komma-examples">examples</a> that maps the interface
+<em>Person</em> to an RDF type representing it and has accessor methods for <em>name</em>
+which it maps to an appropriate RDF property:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">package net.enilink.komma.example.objectmapping.model;
+
+import net.enilink.composition.annotations.Iri;
+
+@Iri("http://enilink.net/examples/objectmapping#Person")
+public interface Person {
+
+	@Iri("http://enilink.net/examples/objectmapping#name")
+	String getName();
+
+	void setName(String name);
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If we were to create such a Person entity and set a name on it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="java language-java">manager.create(Person.class).setName("John Q. Doe");</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>we would end up with RDF statements like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="text/turtle language-text/turtle">_:node18hs02kdux1
+	a &lt;http://enilink.net/examples/objectmapping#Person&gt; ;
+	&lt;http://enilink.net/examples/objectmapping#name&gt; "John Q. Doe" .</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For further information and an example regarding the details and application of
+such mappings, please refer to the
+<a href="../objectmapping">basic object triple mapping example</a>.</p>
+</div>
+</div>
+</div></div>
+	<script src="../../assets/highlightjs/highlight.min.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i, s, o, g, r, a, m) {
+			i['GoogleAnalyticsObject'] = r;
+			i[r] = i[r] || function() {
+				(i[r].q = i[r].q || []).push(arguments)
+			}, i[r].l = 1 * new Date();
+			a = s.createElement(o), m = s.getElementsByTagName(o)[0];
+			a.async = 1;
+			a.src = g;
+			m.parentNode.insertBefore(a, m)
+		})(window, document, 'script',
+				'//www.google-analytics.com/analytics.js', 'ga');
+
+		ga('create', 'UA-49874284-1', 'enilink.net');
+		ga('send', 'pageview');
+	</script>
+</body>
+
+</html>
