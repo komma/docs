@@ -1,2 +1,6 @@
 # simply build the documentation with ant
-script: ant
+script: ant && deploy.sh
+env:
+  global:
+  - GH_REF: github.com/komma/docs.git
+  - secure: "ScC9WAkDzalyFcQZwlyS0CwkU7qLbia5Cv+Olaq1c5PgPW9xgrwjTmAXNDkMJFVkQzmfgkLblf9KMdYDwAwcoS05syPMGi30vKcfDeMKWR1XlM6fT6B5ryCzH53htSYH7KmkmctDUhhCx8g3LQc0ZPo7tazYdmaH4eqW80ZhAE9mGQ/6T++p/bN3q6XywymHPqFMYMHD/IyR37giWYgQ4UdCik6xpnouxewNRg1i5wWTrxA4XmBMuBhes1NavhIgqBVFzDqGcTSdELfG1oWVEoJ+zvZHPZrXCtW16EUCwKrcM5w3aq9vHEC8hiLuSFE8WPGiJroqCPHaYvlskNeyjeN94RqxKTsN20FQmUmlCpRJFTloqY7n+CvxxWNSgt39Hv0hdLl+rsPJkDjQ0l86ZTGHFMjidUKGYZRUm5llrEvEPL4IM/th2EPuaPmQ7+U/LU/PdegRV69zkNq3Ct6ZVmG+6Ek1rg/gQnrTclEs6OEzlGgzsahlraVXbAaFoSTUnly/e+ZqBPfRBkimrR9VIBuQLGm2YZQezCG4YLogToiI3qXAt+0Rx1cnmOYWtpFC7H43r4ubYLkL/W82kGH7cHLPxD8NW01bQyl1uPSoMpK09Qpps+pO91+8Q9p+JXVRWi8Yn/UW2ovb5JtyPjdtScY0A6LqS+tl0hI3K/jbqys="
