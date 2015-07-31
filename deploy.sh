@@ -15,7 +15,9 @@ if [ "$1" ]; then GH_REF="$1"; fi
 remote_url="https://$http_user$GH_REF"
 
 # author, date and message for deployment commit
-author=$(git log -n 1 --format='%aN <%aE>')
+name=$(git log -n 1 --format='%aN')
+email=$(git log -n 1 --format='%aE')
+author="$name <$email>"
 date=$(git log -n 1 --format='%aD')
 message="Built from $(git rev-parse --short HEAD)"
 
@@ -41,6 +43,8 @@ status=$(git status --porcelain)
 # if there are any changes
 if [ "$status" != "" ]
 then
+	git config user.email "$email"
+	git config user.name "$name"
 	git add --all && git commit --message="$message" --author="$author" --date="$date"
 	git push -q origin $deploy_branch:$deploy_branch
 fi
