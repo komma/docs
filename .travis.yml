@@ -1,5 +1,5 @@
-# simply build the documentation with ant
-script: ant && deploy.sh
+# simply build the documentation with ant and deploy with bash script
+script: ant && bash ./deploy.sh
 env:
   global:
   - GH_REF: github.com/komma/docs.git
