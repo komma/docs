@@ -10,7 +10,7 @@
 = Framework - Examples
 
 * link:framework/objectmapping/index.html[Basic object triple mapping]
-* link:framework/behaviour/index.html[Adding behaviour classes to implement application logic]
+* link:framework/behaviour/index.html[Implement application logic with behaviour classes]
 
 = Editors
 
