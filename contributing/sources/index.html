@@ -52,36 +52,48 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The KOMMA development is spread over many different git repositories,
-each bundling certain functionality.</p>
+<p>The source code of KOMMA is hosted on Github at <a href="https://github.com/komma/komma-rdf">https://github.com/komma/komma-rdf</a>.</p>
 </div>
 <div class="paragraph">
-<p>An easy way to get all the required projects is to use <a href="http://code.google.com/p/git-repo/">repo</a>.
-You may have a look at some <a href="http://source.android.com/source/using-repo.html">documentation</a>
-of this tool.</p>
-</div>
-<div class="paragraph">
-<p>Using <em>repo</em> different git repositories are managed by a configuration file. We provide this file in
-an additional git repository. For initializing <em>repo</em> just switch to a workspace folder and
-apply the following command.</p>
+<p>The easiest way to get the source code is:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="text language-text">repo init -u https://github.com/komma/komma-manifest-rcp.git</code></pre>
+<pre class="highlight"><code class="text language-text">git clone --recursive https://github.com/komma/komma-rdf</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The <code>--recursive</code> option is required to fetch the git submodules that are contained within the KOMMA repository.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<h1 id="_use_maven_to_build_komma" class="sect0">Use Maven to build KOMMA</h1>
+<div class="paragraph">
+<p>KOMMA can be build with Maven by leveraging <a href="https://eclipse.org/tycho/">Eclipse Tycho</a>. You can simply use <code>mvn package</code> to compile and package all modules or <code>mvn install</code> to install them within your local Maven repository.</p>
 </div>
 <div class="paragraph">
-<p>Afterwards you can synchronize the repositories using</p>
+<p>If you like to build an update site (or rather an Eclipse P2 repository) for KOMMA then use</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="text language-text">repo sync</code></pre>
+<pre class="highlight"><code class="text language-text">cd releng/komma-updatesite
+mvn package</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The synchronization works with the last committed configuration file. So if we add a
-project there, you will get it the next time you run this command.</p>
+<p>to create it. Afterwards an archive file with the contents can be found within the <code>target-maven</code> subdirectory.
+The uncompressed P2 repository can be found at <code>features/net.enilink.komma.updatesite/target-maven/repository</code>.</p>
 </div>
+<h1 id="_use_eclipse_to_develop_komma" class="sect0">Use Eclipse to develop KOMMA</h1>
 <div class="paragraph">
 <p>For working with the sources we suggest you to download a clean installation of
 Eclipse. Then import all repositories into your workspace by clicking
@@ -98,8 +110,6 @@ Eclipse. Then import all repositories into your workspace by clicking
 <div class="imageblock">
 <div class="content">
 <img src="ide.png" alt="Ready to go">
-</div>
-</div>
 </div>
 </div></div>
 	<script src="../../assets/highlightjs/highlight.min.js"></script>
