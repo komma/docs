@@ -1,12 +1,12 @@
 = Get the sources
 
-The source code of KOMMA is hosted on Github at https://github.com/komma/komma-rdf.
+The source code of KOMMA is hosted on Github at https://github.com/komma/komma.
 
 The easiest way to get the source code is:
 
 [source,text]
 ----
-git clone --recursive https://github.com/komma/komma-rdf
+git clone --recursive https://github.com/komma/komma
 ----
 
 NOTE: The `--recursive` option is required to fetch the git submodules that are contained within the KOMMA repository.
