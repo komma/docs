@@ -1,7 +1,7 @@
 #!/bin/bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-target=$dir/output
+target=$dir/target
 deploy_branch=gh-pages
 http_user=""
 if [ "$GH_TOKEN" ]; then http_user="$GH_TOKEN@"; fi
