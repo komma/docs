@@ -1,12 +1,6 @@
 #!/bin/bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# do not deploy pull requests or branches other than "master"
-if [[ "$TRAVIS_PULL_REQUEST" && "$TRAVIS_PULL_REQUEST" != "false" || "$TRAVIS_BRANCH" && "$TRAVIS_BRANCH" != "master" ]]
-then
-	exit 0
-fi
-
 target=$dir/output
 deploy_branch=gh-pages
 http_user=""
