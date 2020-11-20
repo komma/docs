@@ -18,16 +18,12 @@ message="Built from $(git rev-parse --short HEAD)"
 
 # create temp dir and clone deploy repository
 tempdir=$(mktemp -d -p .)
-if ! git clone "$remote_url" "$tempdir"; then exit; fi
+if ! git clone --single-branch --branch "$deploy_branch" "$remote_url" "$tempdir"; then exit; fi
 
 # change to deploy repository
 cd "$tempdir"
-currentbranch=$(git symbolic-ref --short -q HEAD)
-if ! git checkout "$deploy_branch" &>/dev/null
-then
-	git checkout --orphan "$deploy_branch" &>/dev/null
-        git rm -rf . &>/dev/null
-fi
+# remove existing files
+git rm -rf . &>/dev/null
 # copy generated files
 cp -R "$target/." .
 
@@ -38,5 +34,5 @@ then
 	git config user.email "$email"
 	git config user.name "$name"
 	git add --all && git commit --message="$message" --author="$author" --date="$date"
-	git push -q origin $deploy_branch:$deploy_branch
+	git push -q origin $deploy_branch
 fi
