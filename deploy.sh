@@ -22,13 +22,10 @@ if ! git clone "$remote_url" "$tempdir"; then exit; fi
 # change to deploy repository
 cd "$tempdir"
 currentbranch=$(git symbolic-ref --short -q HEAD)
-if [ "$branch" != "$currentbranch" ]
+if ! git checkout "$deploy_branch" &>/dev/null
 then
-	if ! git checkout "$deploy_branch" &>/dev/null
-	then
-		git checkout --orphan "$deploy_branch" &>/dev/null
-	        git rm -rf . &>/dev/null
-	fi
+	git checkout --orphan "$deploy_branch" &>/dev/null
+        git rm -rf . &>/dev/null
 fi
 # copy generated files
 cp -R "$target/." .
