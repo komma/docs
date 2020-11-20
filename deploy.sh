@@ -1,11 +1,10 @@
 #!/bin/bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-target=$dir/target
+target=$dir/target/generated-docs
 deploy_branch=gh-pages
 http_user=""
-if [ "$GH_TOKEN" ]; then http_user="$GH_TOKEN@"; fi
-if [ "$1" ]; then GITHUB_REPOSITORY="$1"; fi
+if [ "$1" ]; then http_user="$1"; fi
 remote_url="https://${http_user}github.com/$GITHUB_REPOSITORY"
 
 # author, date and message for deployment commit
