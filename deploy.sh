@@ -4,8 +4,10 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 target=$dir/target/generated-docs
 deploy_branch=gh-pages
 http_user=""
-if [ "$1" ]; then http_user="$1"; fi
-remote_url="https://${http_user}@github.com/$GITHUB_REPOSITORY"
+if [ "$1" ]; then token="$1"; fi
+remote_url="https://github.com/$GITHUB_REPOSITORY"
+
+git config http.${remote_url}.extraheader "AUTHORIZATION: bearer $token"
 
 # author, date and message for deployment commit
 name=$(git log -n 1 --format='%aN')
