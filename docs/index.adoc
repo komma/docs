@@ -1,21 +1,38 @@
-= Getting Started
+= KOMMA: RDF Object Mapper
 
-* link:getting_started/install_marketplace/index.html[Install KOMMA from the Eclipse Marketplace]
-* link:getting_started/install/index.html[Install KOMMA from the update site]
+== Getting Started
 
-= Framework
+=== What is KOMMA?
 
-* link:framework/composition/index.html[Object Composition]
+KOMMA is a Java library for manipulating RDF data through an object-oriented API.
 
-= Framework - Examples
+Frameworks like https://rdf4j.org/[Eclipse RDF4J] or https://jena.apache.org/[Apache Jena]
+provide powerful APIs to execute SPARQL queries and to work with RDF on a statement level.
+But they require the developer to always think in triples. For example, to get the
+(FOAF) name of a person with one of these frameworks an API call like `conn.getStatements(person, foafName, null)` has to be used. KOMMA simply allows to access the property by calling a method like `person.getFoafName()` on an object representing the person.
 
-* link:framework/objectmapping/index.html[Basic object triple mapping]
-* link:framework/behaviour/index.html[Implement application logic with behaviour classes]
+=== Features
+KOMMA has the following features:
 
-= Editors
+- *Mapping of Java interfaces* to RDF types
+- Support for *multiple inheritance*
+- Implementation of logic using *behaviours* and *aspect-oriented programming*
+- *Caching* of beans and properties
+- *Model API* for working with *named graphs*
 
-* link:editors/owl_editor/index.html[The OWL editor]
+== Framework
 
-= Contributing
+* link:framework/composition/[Object Composition]
 
-* link:contributing/sources/index.html[Get the sources]
+== Framework - Examples
+
+* link:framework/objectmapping/[Basic object triple mapping]
+* link:framework/behaviour/[Implement application logic with behaviour classes]
+
+== Editors
+
+* link:editors/owl_editor/[The OWL editor]
+
+== Contributing
+
+* link:contributing/sources/[Get the sources]
