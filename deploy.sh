@@ -5,9 +5,10 @@ target=$dir/target/generated-docs
 deploy_branch=gh-pages
 http_user=""
 if [ "$1" ]; then token="$1"; fi
-remote_url="https://github.com/$GITHUB_REPOSITORY"
+remote_url="https://$token:x-oauth-basic@github.com/$GITHUB_REPOSITORY"
 
-git config http.${remote_url}.extraheader "AUTHORIZATION: bearer $token"
+# does not work - set token as HTTP header
+# git config http.${remote_url}.extraheader "AUTHORIZATION: bearer $token"
 
 # author, date and message for deployment commit
 name=$(git log -n 1 --format='%aN')
