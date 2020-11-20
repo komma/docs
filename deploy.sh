@@ -5,7 +5,7 @@ target=$dir/target/generated-docs
 deploy_branch=gh-pages
 http_user=""
 if [ "$1" ]; then http_user="$1"; fi
-remote_url="https://${http_user}github.com/$GITHUB_REPOSITORY"
+remote_url="https://${http_user}@github.com/$GITHUB_REPOSITORY"
 
 # author, date and message for deployment commit
 name=$(git log -n 1 --format='%aN')
