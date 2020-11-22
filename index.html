@@ -450,8 +450,17 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#mapping-of-java-interfaces-to-rdf-types">Mapping of Java interfaces to RDF types</a></li>
-<li><a href="#using-the-entity-manager-to-work-with-rdf-objects">Using the entity manager to work with RDF objects</a></li>
+<li><a href="#entity-manager">Entity Manager</a>
+<ul class="sectlevel2">
+<li><a href="#the-entity-manager-api">The entity manager API</a></li>
 <li><a href="#create-an-entity-manager">Create an entity manager</a></li>
+</ul>
+</li>
+<li><a href="#model-apisupport-for-named-graphs">Model API&#8201;&#8212;&#8201;support for named graphs</a>
+<ul class="sectlevel2">
+<li><a href="#create-a-model-set">Create a model set</a></li>
+</ul>
+</li>
 <li><a href="#more-examples">More examples</a></li>
 <li><a href="#editors">Editors</a></li>
 <li><a href="#contributing">Contributing</a></li>
@@ -542,10 +551,15 @@ are mapped to the corresponding Java types like <code>String</code>, <code>int</
 </div>
 </div>
 <div class="sect1">
-<h2 id="using-the-entity-manager-to-work-with-rdf-objects"><a class="anchor" href="#using-the-entity-manager-to-work-with-rdf-objects"></a>Using the entity manager to work with RDF objects</h2>
+<h2 id="entity-manager"><a class="anchor" href="#entity-manager"></a>Entity Manager</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The main API for working with RDF objects is the entity manager. It provides methods to create, retrieve and delete RDF objects and their properties.</p>
+</div>
+<div class="sect2">
+<h3 id="the-entity-manager-api"><a class="anchor" href="#the-entity-manager-api"></a>The entity manager API</h3>
+<div class="paragraph">
+<p>The following source code examples demonstrate how to use the entity manager API for working with mapped beans.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -591,10 +605,8 @@ IExtendedIterator&lt;Person&gt; resultsAsPersons = query.evaluate(Person.class);
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="create-an-entity-manager"><a class="anchor" href="#create-an-entity-manager"></a>Create an entity manager</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="create-an-entity-manager"><a class="anchor" href="#create-an-entity-manager"></a>Create an entity manager</h3>
 <div class="paragraph">
 <p>The following example shows how an entity manager can be created for an existing
 RDF4J repository.</p>
@@ -635,6 +647,63 @@ Module createGuiceModule(KommaModule kommaModule, Repository repository) {
         }
     }
 }</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="model-apisupport-for-named-graphs"><a class="anchor" href="#model-apisupport-for-named-graphs"></a>Model API&#8201;&#8212;&#8201;support for named graphs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>KOMMA provides a powerful API for working with named graphs. It has the following features:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>load and save RDF files in formats supported by RDF4J (Turtle, JSON-LD, RDF/XML and others)</p>
+</li>
+<li>
+<p>automatically resolve OWL imports (<code>owl:imports</code>)</p>
+</li>
+<li>
+<p>change tracking for undo/redo support or audit trails</p>
+</li>
+<li>
+<p>association between mapped interfaces/behaviours and ontologies</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The model API provides the following two main interfaces:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>IModelSet</code>&#8201;&#8212;&#8201;an interrelated set of multiple named graphs (e.g. ontologies with `owl:import`s)</p>
+</li>
+<li>
+<p><code>IModel</code>&#8201;&#8212;&#8201;one named graph within a model set. This interface may represent a single RDF document.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="create-a-model-set"><a class="anchor" href="#create-a-model-set"></a>Create a model set</h3>
+<div class="paragraph">
+<p>The following example code shows how to create a model set.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="comment">// create configuration and a model set factory</span>
+KommaModule module = ModelPlugin.createModelSetModule(getClass().getClassLoader());
+IModelSetFactory factory = Guice.createInjector(<span class="keyword">new</span> ModelSetModule(module)).getInstance(IModelSetFactory.class);
+
+<span class="comment">// create a model set with an in-memory repository</span>
+IModelSet modelSet = factory.createModelSet(MODELS.NAMESPACE_URI.appendFragment(<span class="string"><span class="delimiter">&quot;</span><span class="content">MemoryModelSet</span><span class="delimiter">&quot;</span></span>));
+
+<span class="comment">// include own modules with concepts and behaviours</span>
+modelSet.getModule().includeModule(<span class="keyword">new</span> ExampleModule());</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -684,7 +753,7 @@ Module createGuiceModule(KommaModule kommaModule, Repository repository) {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-11-22 13:25:34 UTC
+Last updated 2020-11-22 13:50:08 UTC
 </div>
 </div>
 <style>
