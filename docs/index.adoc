@@ -14,11 +14,11 @@ But they require the developer to always think in triples. For example, to get t
 === Features
 KOMMA has the following features:
 
-- *Mapping of Java interfaces* to RDF types
-- Support for *multiple inheritance*
-- Implementation of logic using *behaviours* and *aspect-oriented programming*
-- *Caching* of beans and properties
-- *Model API* for working with *named graphs*
+* *Mapping of Java interfaces* to RDF types
+* Support for *multiple inheritance*
+* Implementation of logic using *behaviours* and *aspect-oriented programming*
+* *Caching* of beans and properties
+* *Model API* for working with *named graphs*
 
 == Mapping of Java interfaces to RDF types
 
@@ -53,9 +53,13 @@ It is possible to map only those types and properties that are required for an a
 Literal types like `xsd:string`, `xsd:int` and others
 are mapped to the corresponding Java types like `String`, `int`/`Integer` and others.
 
-== Using the entity manager to work with RDF objects 
+== Entity Manager
 
 The main API for working with RDF objects is the entity manager. It provides methods to create, retrieve and delete RDF objects and their properties.
+
+=== The entity manager API 
+
+The following source code examples demonstrate how to use the entity manager API for working with mapped beans.
 
 [source,java]
 ----
@@ -100,7 +104,7 @@ IExtendedIterator<Person> resultsAsPersons = query.evaluate(Person.class);
 List<Person> personList = resulsAsPerson.toList();
 ----
 
-== Create an entity manager
+=== Create an entity manager
 
 The following example shows how an entity manager can be created for an existing
 RDF4J repository.
@@ -141,6 +145,37 @@ Module createGuiceModule(KommaModule kommaModule, Repository repository) {
         }
     }
 }
+----
+
+== Model API -- support for named graphs
+
+KOMMA provides a powerful API for working with named graphs. It has the following features:
+
+* load and save RDF files in formats supported by RDF4J (Turtle, JSON-LD, RDF/XML and others)
+* automatically resolve OWL imports (`owl:imports`)
+* change tracking for undo/redo support or audit trails
+* association between mapped interfaces/behaviours and ontologies
+
+The model API provides the following two main interfaces:
+
+* `IModelSet` -- an interrelated set of multiple named graphs (e.g. ontologies with `owl:import`s)
+* `IModel` -- one named graph within a model set. This interface may represent a single RDF document.
+
+=== Create a model set
+
+The following example code shows how to create a model set.
+
+[source,java]
+----
+// create configuration and a model set factory
+KommaModule module = ModelPlugin.createModelSetModule(getClass().getClassLoader());
+IModelSetFactory factory = Guice.createInjector(new ModelSetModule(module)).getInstance(IModelSetFactory.class);
+
+// create a model set with an in-memory repository 
+IModelSet modelSet = factory.createModelSet(MODELS.NAMESPACE_URI.appendFragment("MemoryModelSet"));
+
+// include own modules with concepts and behaviours
+modelSet.getModule().includeModule(new ExampleModule());
 ----
 
 == More examples
