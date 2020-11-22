@@ -20,14 +20,134 @@ KOMMA has the following features:
 - *Caching* of beans and properties
 - *Model API* for working with *named graphs*
 
-== Framework
+== Mapping of Java interfaces to RDF types
 
-* link:framework/composition/[Object Composition]
+KOMMA's main feature is the mapping of Java interfaces to RDF types and properties.
+The following example shows an interface that represents the RDF type `foaf:Person`
+with the two properties `foaf:name` and `foaf:knows`.
 
-== Framework - Examples
+[source,java]
+----
+@Iri("http://xmlns.com/foaf/0.1/Person")
+public interface Person {
+	@Iri("http://xmlns.com/foaf/0.1/name")
+	String name();
+
+	Person name(String name);
+
+    @Iri("http://xmlns.com/foaf/0.1/knows")
+	Set<Person> knows();
+
+	Person knows(Set<Person> knows);
+}
+----
+
+KOMMA uses only the single annotation `@Iri` for the definition of mappings that can be applied either to interfaces or methods. When used on an interfaces its string value is interpreted as an RDF type
+(like _http://xmlns.com/foaf/0.1/Person_). When used on a method its value is interpreted as an RDF property 
+(like _http://xmlns.com/foaf/0.1/knows_).
+
+Mappings of interfaces and properties don't need to
+correspond to any RDF schema or OWL ontology and they also don't need to be complete in respect to the RDF data.
+It is possible to map only those types and properties that are required for an application.
+
+Literal types like `xsd:string`, `xsd:int` and others
+are mapped to the corresponding Java types like `String`, `int`/`Integer` and others.
+
+== Using the entity manager to work with RDF objects 
+
+The main API for working with RDF objects is the entity manager. It provides methods to create, retrieve and delete RDF objects and their properties.
+
+[source,java]
+----
+IEntityManager em;
+
+// create a named resource with an URI -> RDF type statement is added to database
+Person john = em.createNamed(URIs.create("http://example.org/persons/john"), Person.class);
+
+// find an existing resource -> no statements are added to database
+Person jane = em.find(URIs.create("http://example.org/persons/jane"), Person.class);
+
+// delete a resource from the database
+em.remove(john);
+// delete a resources and outgoing statements recursively while following only anonymous resources
+em.removeRecursive(john, true);
+
+// use mapped properties to add statements
+john.knows().remove(jane);
+john.knows().clear();
+john.knows().add(jane);
+
+// use equivalent statement-level APIs
+em.remove(new Statement(john, URIs.createURI("http://xmlns.com/foaf/0.1/knows"), jane);
+em.remove(new Statement(john, URIs.createURI("http://xmlns.com/foaf/0.1/knows"), null);
+em.add(new Statement(john, URIs.createURI("http://xmlns.com/foaf/0.1/knows"), jane);
+
+// create resource that is represented by a blank node
+Person anonymous = em.create(Person.class);
+anonymous.name("Unknown person");
+
+// create a SPARQL query
+IQuery<?> query = em.createQuery(
+    "prefix foaf: <http://xmlns.com/foaf/0.1/> ." +
+    "select ?other { ?p foaf:knows ?ther }");
+query.setParameter("p", john);
+
+// evaluate query with unknown result types
+IExtendedIterator<?> results = query.evaluate();
+
+// evaluate query while ensuring that results are at least of type Person
+IExtendedIterator<Person> resultsAsPersons = query.evaluate(Person.class);
+List<Person> personList = resulsAsPerson.toList();
+----
+
+== Create an entity manager
+
+The following example shows how an entity manager can be created for an existing
+RDF4J repository.
+
+[source,java]
+----
+IEntityManager createEntityManager(Repository repository) {
+    // create a KOMMA module with mapped interfaces
+    KommaModule kommaModule = new KommaModule();
+    kommaModule.addConcept(Person.class);
+    
+    // create a Guice injector and retrieve an entity manager instance
+    Injector injector = Guice.createInjector(createGuiceModule(kommaModule, repository));
+	IEntityManagerFactory factory = injector.getInstance(IEntityManagerFactory.class);
+	return factory.get();
+}
+
+Module createGuiceModule(KommaModule kommaModule, Repository repository) {
+    return new AbstractModule {
+        @Override
+        protected void configure() {
+            install(new RDF4JModule());
+            install(new EntityManagerFactoryModule(kommaModule, null, 
+                new CachingEntityManagerModule()));
+            install(new CacheModule("emCache"));
+
+            UnitOfWork uow = new UnitOfWork();
+            uow.begin();
+
+            bind(UnitOfWork.class).toInstance(uow);
+            bind(IUnitOfWork.class).toInstance(uow);
+            bind(Repository.class).toInstance(dataRepository);
+        }
+
+        @Provides
+        protected IDataManager provideDataManager(IDataManagerFactory dmFactory) {
+            return dmFactory.get();
+        }
+    }
+}
+----
+
+== More examples
 
 * link:framework/objectmapping/[Basic object triple mapping]
 * link:framework/behaviour/[Implement application logic with behaviour classes]
+* link:framework/composition/[Object Composition]
 
 == Editors
 
