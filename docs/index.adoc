@@ -92,8 +92,8 @@ anonymous.name("Unknown person");
 
 // create a SPARQL query
 IQuery<?> query = em.createQuery(
-    "prefix foaf: <http://xmlns.com/foaf/0.1/> ." +
-    "select ?other { ?p foaf:knows ?ther }");
+    "prefix foaf: <http://xmlns.com/foaf/0.1/>" +
+    "select ?other { ?p foaf:knows ?other }");
 query.setParameter("p", john);
 
 // evaluate query with unknown result types
@@ -158,7 +158,7 @@ KOMMA provides a powerful API for working with named graphs. It has the followin
 
 The model API provides the following two main interfaces:
 
-* `IModelSet` -- an interrelated set of multiple named graphs (e.g. ontologies with `owl:import`s)
+* `IModelSet` -- an interrelated set of multiple named graphs (e.g. ontologies with `owl:imports`)
 * `IModel` -- one named graph within a model set. This interface may represent a single RDF document.
 
 === Create a model set
