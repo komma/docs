@@ -592,8 +592,8 @@ anonymous.name(<span class="string"><span class="delimiter">&quot;</span><span c
 
 <span class="comment">// create a SPARQL query</span>
 IQuery&lt;?&gt; query = em.createQuery(
-    <span class="string"><span class="delimiter">&quot;</span><span class="content">prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt; .</span><span class="delimiter">&quot;</span></span> +
-    <span class="string"><span class="delimiter">&quot;</span><span class="content">select ?other { ?p foaf:knows ?ther }</span><span class="delimiter">&quot;</span></span>);
+    <span class="string"><span class="delimiter">&quot;</span><span class="content">prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;</span><span class="delimiter">&quot;</span></span> +
+    <span class="string"><span class="delimiter">&quot;</span><span class="content">select ?other { ?p foaf:knows ?other }</span><span class="delimiter">&quot;</span></span>);
 query.setParameter(<span class="string"><span class="delimiter">&quot;</span><span class="content">p</span><span class="delimiter">&quot;</span></span>, john);
 
 <span class="comment">// evaluate query with unknown result types</span>
@@ -680,7 +680,7 @@ Module createGuiceModule(KommaModule kommaModule, Repository repository) {
 <div class="ulist">
 <ul>
 <li>
-<p><code>IModelSet</code>&#8201;&#8212;&#8201;an interrelated set of multiple named graphs (e.g. ontologies with `owl:import`s)</p>
+<p><code>IModelSet</code>&#8201;&#8212;&#8201;an interrelated set of multiple named graphs (e.g. ontologies with <code>owl:imports</code>)</p>
 </li>
 <li>
 <p><code>IModel</code>&#8201;&#8212;&#8201;one named graph within a model set. This interface may represent a single RDF document.</p>
@@ -753,7 +753,7 @@ modelSet.getModule().includeModule(<span class="keyword">new</span> ExampleModul
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-11-22 13:50:08 UTC
+Last updated 2022-01-19 07:19:12 UTC
 </div>
 </div>
 <style>
